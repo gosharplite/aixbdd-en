@@ -28,6 +28,13 @@ are preserved. Translation decisions:
   which will be created under that name when axb-implement is translated).
 - Code identifiers, file paths, and skill names (e.g., `/axb-clarify`, `CONSTITUTION.md`) are kept
   as-is.
+- **Fixed DSL contract tokens stay in Chinese**, per `axb-gherkin-and-dsl/STANDARDS.md`'s "Project
+  Language" section: the meta-schema field tokens (`DSL 句型`, `Gherkin 參數`, `Data Table 參數`,
+  `預設參數`, `…實作語意`), the `不支援`/`支援：` cell literals, and the §5.1/§5.2 sub-labels
+  (`怎麼做`, `權威狀態落地`, `回寫`, `不必查`/`必查`, `呈現結果`, `權威狀態`, `再讀確認`, `跨視角`,
+  `不該發生`). The audit script requires the first table column header to be exactly `DSL 句型`;
+  translating these tokens would break it silently. Everything else — including example Gherkin,
+  parameter keys, and file names — follows the project-declared language and is translated.
 
 ## Attribution & license
 
@@ -55,7 +62,7 @@ Translation is done step by step, one file at a time.
 | axb-clarify-over-specs | ✅ Done |
 | axb-data-plan | ✅ Done |
 | axb-dsl-refine | ✅ Done |
-| axb-gherkin-and-dsl | ⬜ Pending |
+| axb-gherkin-and-dsl | ✅ Done |
 | axb-implement | ⬜ Pending |
 | axb-spec-by-example | ⬜ Pending |
 | axb-specify | ⬜ Pending |
