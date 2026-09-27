@@ -54,7 +54,7 @@ Translation is done step by step, one file at a time.
 | axb-clarify | ✅ Done |
 | axb-clarify-over-specs | ✅ Done |
 | axb-data-plan | ✅ Done |
-| axb-dsl-refine | ⬜ Pending |
+| axb-dsl-refine | ✅ Done |
 | axb-gherkin-and-dsl | ⬜ Pending |
 | axb-implement | ⬜ Pending |
 | axb-spec-by-example | ⬜ Pending |
