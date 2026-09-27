@@ -53,7 +53,7 @@ Translation is done step by step, one file at a time.
 | axb-bdd | ✅ Done |
 | axb-clarify | ✅ Done |
 | axb-clarify-over-specs | ✅ Done |
-| axb-data-plan | ⬜ Pending |
+| axb-data-plan | ✅ Done |
 | axb-dsl-refine | ⬜ Pending |
 | axb-gherkin-and-dsl | ⬜ Pending |
 | axb-implement | ⬜ Pending |

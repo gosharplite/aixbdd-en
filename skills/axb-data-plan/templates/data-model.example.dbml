@@ -1,0 +1,95 @@
+Project "generic_ecommerce_storefront" {
+  database_type: "PostgreSQL"
+  Note: '''
+  This DBML describes the data boundaries for products, shopping carts, orders, and shipping information in a generic e-commerce website.
+  The initial version uses a relational database as the main source of truth, covering the core entities needed by the storefront purchase flow, while preserving extension room for future payment and promotion module integration.
+  '''
+}
+
+Enum cart_status {
+  active
+  converted
+  abandoned
+}
+
+Enum order_status {
+  pending
+  paid
+  fulfilled
+  cancelled
+}
+
+Enum shipment_status {
+  preparing
+  shipped
+  delivered
+  returned
+}
+
+Table products {
+  product_id uuid [pk]
+  sku varchar(32) [unique]
+  name varchar(120)
+  unit_price decimal(10,2)
+  inventory_qty int
+  is_active boolean
+
+  Note: 'Product master; stores the identification info, price, inventory, and listing status of sellable products.'
+}
+
+Table carts {
+  cart_id uuid [pk]
+  customer_id uuid [null]
+  status cart_status
+  created_at timestamp
+  updated_at timestamp
+
+  Note: 'Shopping cart master; tracks a single customer''s temporary shopping state before checkout.'
+}
+
+Table cart_items {
+  cart_item_id uuid [pk]
+  cart_id uuid
+  product_id uuid
+  quantity int
+  unit_price_snapshot decimal(10,2)
+
+  Note: 'Cart item; records the product, quantity, and the price snapshot at the time the product was added to the cart.'
+}
+
+Table orders {
+  order_id uuid [pk]
+  cart_id uuid [null]
+  status order_status
+  total_amount decimal(10,2)
+  placed_at timestamp
+
+  Note: 'Order master; stores the transaction state, total amount, and creation time after the customer completes checkout.'
+}
+
+Table order_items {
+  order_item_id uuid [pk]
+  order_id uuid
+  product_id uuid
+  quantity int
+  unit_price_snapshot decimal(10,2)
+
+  Note: 'Order item; stores the products purchased in each order, with quantities and the price snapshot at checkout.'
+}
+
+Table shipments {
+  shipment_id uuid [pk]
+  order_id uuid
+  status shipment_status
+  recipient_name varchar(80)
+  shipping_address text
+
+  Note: 'Shipment info; records the order''s shipping progress, recipient info, and delivery address.'
+}
+
+Ref: cart_items.cart_id > carts.cart_id
+Ref: cart_items.product_id > products.product_id
+Ref: orders.cart_id > carts.cart_id
+Ref: order_items.order_id > orders.order_id
+Ref: order_items.product_id > products.product_id
+Ref: shipments.order_id > orders.order_id
