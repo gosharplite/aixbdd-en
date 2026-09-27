@@ -50,7 +50,7 @@ Translation is done step by step, one file at a time.
 |---|---|
 | axb-constitution | ✅ Done |
 | axb-bdd | ✅ Done |
-| axb-clarify | ⬜ Pending |
+| axb-clarify | ✅ Done |
 | axb-clarify-over-specs | ⬜ Pending |
 | axb-data-plan | ⬜ Pending |
 | axb-dsl-refine | ⬜ Pending |
