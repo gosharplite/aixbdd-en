@@ -63,7 +63,7 @@ Translation is done step by step, one file at a time.
 | axb-dsl-refine | ✅ Done |
 | axb-gherkin-and-dsl | ✅ Done |
 | axb-implement | ✅ Done |
-| axb-spec-by-example | ⬜ Pending |
+| axb-spec-by-example | ✅ Done |
 | axb-specify | ⬜ Pending |
 | axb-system-analysis | ⬜ Pending |
 | axb-tasks | ⬜ Pending |
