@@ -1,0 +1,16 @@
+┌─ {{PRODUCT_TITLE}} ──────────────────────────────────────────────┐
+│ {{PRODUCT_SUBTITLE}}                                             │
+│                                                                  │
+│  Input                                    {{FOCUS_BADGE}}        │
+│  {{EDITOR_LINE_1}}                                               │
+│  {{EDITOR_LINE_2}}▏                                              │
+│                                                                  │
+│  Suggestions                                                            │
+│  {{SUGGESTION_1}}                                                │
+│  {{SUGGESTION_2}}                                                │
+│  {{SUGGESTION_3}}                                                │
+│                                                                  │
+│  {{ERROR_OR_HINT}}                                               │
+│  {{STATUS_LEFT}}                              {{STATUS_RIGHT}}    │
+│  {{KEYBINDING_HINT}}                                             │
+└──────────────────────────────────────────────────────────────────┘

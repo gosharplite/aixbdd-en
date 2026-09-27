@@ -69,5 +69,5 @@ Translation is done step by step, one file at a time.
 | axb-tasks | ✅ Done |
 | axb-technical-research | ✅ Done |
 | axb-truth-delta | ✅ Done |
-| axb-ui-plan | ⬜ Pending |
+| axb-ui-plan | ✅ Done |
 | axb-api-plan | ⬜ Pending |

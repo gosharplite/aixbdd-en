@@ -1,0 +1,12 @@
+┌─ tell-me-go · running ────────────────────────────────────────────┐
+│ deploy to staging with version 015                               │
+│                                                                  │
+│  Steps                                       Recent output       │
+│  ✓ Build binary                                build ok (2.1s)   │
+│  ✓ Upload artifact                             upload ok (0.8s)  │
+│  ▸ Start staging service                       waiting...        │
+│                                                                  │
+│                                                                  │
+│  model: same-as-session                     tokens: 12,341/1M    │
+│  Esc abort · ? help                                            │
+└──────────────────────────────────────────────────────────────────┘

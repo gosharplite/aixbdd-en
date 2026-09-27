@@ -1,0 +1,12 @@
+┌─ {{SCREEN_TITLE}} ───────────────────────────────────────────────┐
+│ {{SCREEN_SUBTITLE}}                                              │
+│                                                                  │
+│  {{PANE_1_TITLE}}                          {{PANE_2_TITLE}}      │
+│  {{PANE_1_ROW_1}}                          {{PANE_2_ROW_1}}      │
+│  {{PANE_1_ROW_2}}                          {{PANE_2_ROW_2}}      │
+│  {{PANE_1_ROW_3}}                          {{PANE_2_ROW_3}}      │
+│                                                                  │
+│  {{ERROR_OR_HINT}}                                               │
+│  {{STATUS_LEFT}}                              {{STATUS_RIGHT}}    │
+│  {{KEYBINDING_HINT}}                                             │
+└──────────────────────────────────────────────────────────────────┘

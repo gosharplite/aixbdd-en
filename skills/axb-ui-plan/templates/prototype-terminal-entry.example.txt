@@ -1,0 +1,16 @@
+┌─ tell-me-go · interactive prompt ─────────────────────────────────┐
+│ Type your question; use ↑/↓ to browse suggestions, Tab to accept  │
+│                                                                  │
+│  Input                                      [editing]            │
+│  deploy to staging                                               │
+│  ▏                                                               │
+│                                                                  │
+│  Suggestions                                                     │
+│  deploy to staging with version 015                              │
+│  deploy to staging and run smoke tests                           │
+│  deploy to production (needs approval)                           │
+│                                                                  │
+│                                                                  │
+│  model: same-as-session                     tokens: 12,048/1M    │
+│  Enter send · Tab accept · ? help · Ctrl+C cancel                │
+└──────────────────────────────────────────────────────────────────┘
