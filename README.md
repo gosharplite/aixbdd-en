@@ -40,7 +40,8 @@ translation).
 Five of the inherited skills — `axb-specify`, `axb-clarify-over-specs`, `axb-tasks`,
 `axb-implement`, and `axb-technical-research` — were in turn derived by AIxBDD from
 [GitHub Spec Kit](https://github.com/github/spec-kit) (MIT). Their per-skill `LICENSE` files are
-retained alongside those skills.
+retained alongside those skills; the original notices are preserved verbatim, with an unofficial
+English translation appended for convenience (the original text is authoritative).
 
 ## Translation progress
 
@@ -51,7 +52,7 @@ Translation is done step by step, one file at a time.
 | axb-constitution | ✅ Done |
 | axb-bdd | ✅ Done |
 | axb-clarify | ✅ Done |
-| axb-clarify-over-specs | ⬜ Pending |
+| axb-clarify-over-specs | ✅ Done |
 | axb-data-plan | ⬜ Pending |
 | axb-dsl-refine | ⬜ Pending |
 | axb-gherkin-and-dsl | ⬜ Pending |
