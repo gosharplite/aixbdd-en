@@ -1,0 +1,37 @@
+aixbdd-tmg — the AIxBDD workflow, adapted
+
+This repository is a derivative work of AIxBDD
+(https://github.com/Waterball-Software-Academy/aixbdd) and is distributed
+under the Apache License, Version 2.0 (see LICENSE).
+
+The upstream attribution notice is reproduced verbatim below, as required by
+the Apache License, Version 2.0, Section 4(d):
+
+    AIxBDD Workflow
+
+    Copyright 2026 - 水球球特務有限公司 (Waterball Agent Limited)
+
+    Licensed under the Apache License, Version 2.0.
+
+Five of the inherited skills — specify, clarify-over-specs, tasks, implement,
+and technical-research — additionally contain material adapted by AIxBDD from
+GitHub Spec Kit (https://github.com/github/spec-kit), licensed under the MIT
+License. The applicable copyright and license notices are retained alongside
+those skills (for example, skills/axb-specify/LICENSE).
+
+Differences from the upstream AIxBDD workflow: the skills are renamed with an
+`axb-` prefix; this repository adds a domain model (domain-model/), decision
+records (decisions/), PM/RD role configs (roles/), and CLI-application
+guidance.
+
+---
+
+aixbdd-en — English translation of aixbdd-tmg
+
+This repository is an English translation (a derivative work) of aixbdd-tmg.
+Every file has been translated from the original Traditional Chinese; file
+names under skills/axb-constitution/rules/ have additionally been renamed
+into English. All other structure, semantics, and content are preserved.
+
+The upstream attribution notice above is reproduced verbatim as required by
+the Apache License, Version 2.0, Section 4(d).
