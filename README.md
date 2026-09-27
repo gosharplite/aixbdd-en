@@ -68,6 +68,6 @@ Translation is done step by step, one file at a time.
 | axb-system-analysis | ✅ Done |
 | axb-tasks | ✅ Done |
 | axb-technical-research | ✅ Done |
-| axb-truth-delta | ⬜ Pending |
+| axb-truth-delta | ✅ Done |
 | axb-ui-plan | ⬜ Pending |
 | axb-api-plan | ⬜ Pending |
