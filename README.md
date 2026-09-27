@@ -22,8 +22,10 @@ All files are translated from the original Traditional Chinese; structure, seman
 are preserved. Translation decisions:
 
 - Skill definition filenames (`SKILL.md`) and folder names are kept identical to the source.
-- Rule filenames under `skills/axb-constitution/rules/` have been renamed into English; internal
-  cross-references were updated accordingly.
+- Rule filenames under `skills/*/rules/` have been renamed into English; internal cross-references
+  were updated accordingly. Cross-skill references use the planned English names (e.g. axb-bdd
+  references `axb-implement`'s `rules/definition-of-done-verification-and-writeback-criteria.md`,
+  which will be created under that name when axb-implement is translated).
 - Code identifiers, file paths, and skill names (e.g., `/axb-clarify`, `CONSTITUTION.md`) are kept
   as-is.
 
@@ -47,7 +49,7 @@ Translation is done step by step, one file at a time.
 | Skill | Status |
 |---|---|
 | axb-constitution | ✅ Done |
-| axb-bdd | ⬜ Pending |
+| axb-bdd | ✅ Done |
 | axb-clarify | ⬜ Pending |
 | axb-clarify-over-specs | ⬜ Pending |
 | axb-data-plan | ⬜ Pending |
