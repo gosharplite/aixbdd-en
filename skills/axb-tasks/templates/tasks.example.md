@@ -21,7 +21,7 @@
 
 - [ ] T001 Add the `websockets` package and test connection configuration
   - Read:
-    - `specs/truth/techstack.md` -> Backend, testing & verification
+    - `specs/truth/techstack.md` -> Backend, Testing & Verification
   - Add `websockets` to backend test dependencies.
   - Write the websocket URL clearly in test configuration (e.g. `ws://127.0.0.1:{port}/ws`) for subsequent tests to read; write no message-sending semantics.
 
@@ -34,7 +34,7 @@
 
 - [ ] T003 Smoke-test confirming `websockets` can connect to FastAPI `/ws`
   - Read:
-    - `specs/truth/techstack.md` -> Testing & verification
+    - `specs/truth/techstack.md` -> Testing & Verification
   - Use `websockets.connect` to hit T001's URL; stop once connectivity is confirmed.
   - Do not run this round's Feature; write no stepdef semantics.
 
@@ -51,7 +51,7 @@
 
 - [ ] T005 Establish the websocket connection helper
   - Read:
-    - `specs/truth/techstack.md` -> Testing & verification
+    - `specs/truth/techstack.md` -> Testing & Verification
     - `backend/features/steps/shared/chat_helpers.py`
   - Only do: wrap open/close connections with `websockets.connect`; the context records "player name → connection"; close connections at scenario end.
   - Do not: send chat contents, nor assert who sees what.
