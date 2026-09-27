@@ -70,4 +70,4 @@ Translation is done step by step, one file at a time.
 | axb-technical-research | ✅ Done |
 | axb-truth-delta | ✅ Done |
 | axb-ui-plan | ✅ Done |
-| axb-api-plan | ⬜ Pending |
+| axb-api-plan | ✅ Done |

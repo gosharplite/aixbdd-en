@@ -1,0 +1,339 @@
+openapi: 3.0.3
+info:
+  title: E-commerce Website API Contract Example
+  version: 0.1.0
+  description: An action-style API contract example covering product search, add-to-cart, order creation, and order query.
+paths:
+  /products/search:
+    post:
+      summary: Search product list
+      description: Query currently sellable products by keyword, category, and pagination conditions.
+      operationId: searchProducts
+      tags:
+        - catalog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductSearchRequest'
+      responses:
+        '200':
+          description: Successfully returns the matching product list and pagination info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSearchResponse'
+        '400':
+          description: The query conditions have an illegal format.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-realtime-note: This operation needs no realtime channel synchronization.
+  /carts/items/add:
+    post:
+      summary: Add item to cart
+      description: Add the specified product and quantity to the cart, returning the updated cart summary.
+      operationId: addCartItem
+      tags:
+        - cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+      responses:
+        '200':
+          description: Successfully adds the item and returns the latest cart contents.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddCartItemResponse'
+        '409':
+          description: The product is delisted, inventory is insufficient, or the cart state does not allow modification.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-realtime-note: If the same cart is opened concurrently on multiple clients, the cart summary can additionally be synchronized through a realtime channel.
+  /checkouts/orders:
+    post:
+      summary: Create order
+      description: Create an order from the cart contents, shipping details, and payment method.
+      operationId: createOrderFromCheckout
+      tags:
+        - checkout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Successfully creates the order and returns the order number and initial state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrderResponse'
+        '409':
+          description: The cart is empty, the payment method is unavailable, or product inventory is insufficient at checkout.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-realtime-note: After successful order creation, events can notify back-office fulfillment, payment, or logistics flows.
+  /orders/query:
+    post:
+      summary: Query order
+      description: Query the order summary and shipping status by order number and customer email.
+      operationId: queryOrder
+      tags:
+        - order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryOrderRequest'
+      responses:
+        '200':
+          description: Successfully returns the order summary, items, and status info.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryOrderResponse'
+        '404':
+          description: No order matching the conditions was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      x-realtime-note: If the order status keeps changing, a subsequent event stream can supplement payment or delivery updates.
+components:
+  schemas:
+    ProductSearchRequest:
+      type: object
+      required:
+        - page
+        - pageSize
+      properties:
+        keyword:
+          type: string
+        categorySlug:
+          type: string
+        page:
+          type: integer
+        pageSize:
+          type: integer
+    ProductSummary:
+      type: object
+      required:
+        - productId
+        - name
+        - price
+        - currency
+        - inStock
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        inStock:
+          type: boolean
+    Pagination:
+      type: object
+      required:
+        - page
+        - pageSize
+        - totalItems
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+    ProductSearchResponse:
+      type: object
+      required:
+        - items
+        - pagination
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductSummary'
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+    AddCartItemRequest:
+      type: object
+      required:
+        - cartId
+        - productId
+        - quantity
+      properties:
+        cartId:
+          type: string
+        productId:
+          type: string
+        quantity:
+          type: integer
+    CartItem:
+      type: object
+      required:
+        - productId
+        - name
+        - quantity
+        - unitPrice
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+    CartSummary:
+      type: object
+      required:
+        - cartId
+        - itemCount
+        - totalAmount
+        - currency
+        - items
+      properties:
+        cartId:
+          type: string
+        itemCount:
+          type: integer
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CartItem'
+    AddCartItemResponse:
+      type: object
+      required:
+        - cart
+      properties:
+        cart:
+          $ref: '#/components/schemas/CartSummary'
+    ShippingAddress:
+      type: object
+      required:
+        - recipientName
+        - line1
+        - city
+        - postalCode
+        - country
+      properties:
+        recipientName:
+          type: string
+        line1:
+          type: string
+        city:
+          type: string
+        postalCode:
+          type: string
+        country:
+          type: string
+    CreateOrderRequest:
+      type: object
+      required:
+        - cartId
+        - customerEmail
+        - shippingAddress
+        - paymentMethod
+      properties:
+        cartId:
+          type: string
+        customerEmail:
+          type: string
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        paymentMethod:
+          type: string
+    CreateOrderResponse:
+      type: object
+      required:
+        - orderId
+        - status
+        - totalAmount
+        - currency
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+    QueryOrderRequest:
+      type: object
+      required:
+        - orderId
+        - customerEmail
+      properties:
+        orderId:
+          type: string
+        customerEmail:
+          type: string
+    OrderLineItem:
+      type: object
+      required:
+        - productId
+        - name
+        - quantity
+        - subtotal
+      properties:
+        productId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: integer
+        subtotal:
+          type: number
+    QueryOrderResponse:
+      type: object
+      required:
+        - orderId
+        - status
+        - customerEmail
+        - totalAmount
+        - currency
+        - items
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+        customerEmail:
+          type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLineItem'
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
