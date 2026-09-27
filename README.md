@@ -66,7 +66,7 @@ Translation is done step by step, one file at a time.
 | axb-spec-by-example | ✅ Done |
 | axb-specify | ✅ Done |
 | axb-system-analysis | ✅ Done |
-| axb-tasks | ⬜ Pending |
+| axb-tasks | ✅ Done |
 | axb-technical-research | ⬜ Pending |
 | axb-truth-delta | ⬜ Pending |
 | axb-ui-plan | ⬜ Pending |
