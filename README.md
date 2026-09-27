@@ -23,9 +23,8 @@ are preserved. Translation decisions:
 
 - Skill definition filenames (`SKILL.md`) and folder names are kept identical to the source.
 - Rule filenames under `skills/*/rules/` have been renamed into English; internal cross-references
-  were updated accordingly. Cross-skill references use the planned English names (e.g. axb-bdd
-  references `axb-implement`'s `rules/definition-of-done-verification-and-writeback-criteria.md`,
-  which will be created under that name when axb-implement is translated).
+  were updated accordingly. Cross-skill references use the agreed English names (e.g. axb-bdd
+  references `axb-implement`'s `rules/definition-of-done-verification-and-writeback-criteria.md`).
 - Code identifiers, file paths, and skill names (e.g., `/axb-clarify`, `CONSTITUTION.md`) are kept
   as-is.
 - **Fixed DSL contract tokens stay in Chinese**, per `axb-gherkin-and-dsl/STANDARDS.md`'s "Project
@@ -63,7 +62,7 @@ Translation is done step by step, one file at a time.
 | axb-data-plan | ✅ Done |
 | axb-dsl-refine | ✅ Done |
 | axb-gherkin-and-dsl | ✅ Done |
-| axb-implement | ⬜ Pending |
+| axb-implement | ✅ Done |
 | axb-spec-by-example | ⬜ Pending |
 | axb-specify | ⬜ Pending |
 | axb-system-analysis | ⬜ Pending |
