@@ -64,7 +64,7 @@ Translation is done step by step, one file at a time.
 | axb-gherkin-and-dsl | ✅ Done |
 | axb-implement | ✅ Done |
 | axb-spec-by-example | ✅ Done |
-| axb-specify | ⬜ Pending |
+| axb-specify | ✅ Done |
 | axb-system-analysis | ⬜ Pending |
 | axb-tasks | ⬜ Pending |
 | axb-technical-research | ⬜ Pending |

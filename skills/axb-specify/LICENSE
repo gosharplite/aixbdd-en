@@ -1,0 +1,46 @@
+本 skill（axb-specify）源自 AIxBDD
+（https://github.com/Waterball-Software-Academy/aixbdd；
+Copyright 2026 - 水球球特務有限公司 (Waterball Agent Limited)；Apache License 2.0），
+並參考改寫自 GitHub Spec Kit：
+https://github.com/github/spec-kit
+
+以下為 Spec Kit 原始 MIT License 全文，依該授權要求予以保留與標註。
+
+
+---
+
+Unofficial English translation of the Chinese attribution above
+(for convenience only; the original Chinese text is authoritative):
+
+This skill (axb-specify) originates from AIxBDD
+(https://github.com/Waterball-Software-Academy/aixbdd;
+Copyright 2026 - Waterball Agent Limited (水球球特務有限公司);
+Apache License 2.0), and is adapted from GitHub Spec Kit:
+https://github.com/github/spec-kit
+
+The full original MIT License text of Spec Kit follows below, retained
+and attributed as required by that license.
+
+---
+
+MIT License
+
+Copyright GitHub, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
