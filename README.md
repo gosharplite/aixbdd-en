@@ -90,17 +90,30 @@ When resolving architect or peer review findings on a pull request, modifying fi
 
 ## About this repository
 
-This repository is a **translation of a derivative work**, maintained as a faithful English
-rendering of the original Traditional Chinese sources:
+This repository (**aixbdd-en**) originated as a faithful English translation of **[aixbdd-tmg](https://github.com/gosharplite/aixbdd-tmg)**, which is itself an adapted derivative work of the original **[AIxBDD](https://github.com/Waterball-Software-Academy/aixbdd)**.
 
-1. **[AIxBDD](https://github.com/Waterball-Software-Academy/aixbdd)** by Waterball Agent Limited
-   (水球球特務有限公司) — the original BDD workflow, licensed under the **Apache License, Version 2.0**.
-2. **[aixbdd-tmg](https://github.com/gosharplite/aixbdd-tmg)** — a derivative of AIxBDD adding a
-   domain model, decision records, PM/RD role configs, and CLI-application guidance (Apache-2.0).
-3. **aixbdd-en** (this repository) — the English translation of aixbdd-tmg.
+### Repository Lineage
 
-All files are translated from the original Traditional Chinese; structure, semantics, and content
-are preserved. Translation decisions:
+```
+[AIxBDD] (Upstream original by Waterball Agent Limited)
+   │
+   └──► [aixbdd-tmg] (Derivative: adds domain model, CLI guidance, role configs, axb- prefix)
+          │
+          └──► [aixbdd-en] (English edition: ongoing independent evolution)
+```
+
+1. **[AIxBDD](https://github.com/Waterball-Software-Academy/aixbdd)**: The upstream original BDD workflow created by Waterball Agent Limited (水球球特務有限公司), licensed under the **Apache License, Version 2.0**.
+2. **[aixbdd-tmg](https://github.com/gosharplite/aixbdd-tmg)**: A derivative work adapted from AIxBDD. **It is not identical to upstream AIxBDD** — it introduces several key architectural and workflow extensions:
+   - **Prefix standard**: Skills are consistently renamed with an `axb-` prefix (e.g., `specify` → `axb-specify`, `bdd` → `axb-bdd`).
+   - **Canonical Domain Model**: Introduces a formal domain model under `domain-model/` (`aixbdd.modelith.md` / `.yaml`).
+   - **CLI Application Guidance**: Extends the workflow for command-line applications (the `cli` interface kind, terminal-mode UI plans, and streamlined analysis).
+   - **Role configurations**: Adds PM and RD role definitions (`roles/pm.yaml`, `roles/rd.yaml`).
+   - **Architecture Decision Records**: Tracks governance decisions under `decisions/`.
+3. **[aixbdd-en](https://github.com/gosharplite/aixbdd-en)** (this repository): Began as the English translation of **aixbdd-tmg** (translated from aixbdd-tmg rather than original AIxBDD). Going forward, `aixbdd-en` maintains an **independent evolution path** — additional changes, English-native tooling, and workflow refinements are actively introduced here, so it is expected to deviate from upstream `aixbdd-tmg` over time.
+
+### Baseline translation decisions
+
+All initial files were translated from aixbdd-tmg's original Traditional Chinese; structure, semantics, and content are preserved as the baseline:
 
 - Skill definition filenames (`SKILL.md`) and folder names are kept identical to the source.
 - Rule filenames under `skills/*/rules/` have been renamed into English; internal cross-references
