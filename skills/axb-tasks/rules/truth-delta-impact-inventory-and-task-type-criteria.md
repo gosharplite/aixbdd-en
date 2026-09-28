@@ -71,7 +71,7 @@ The first phase in `tasks.md` is Setup:
 - Level: `MUST`
 - Phase 3's list must include truth-delta's `ADD` / `MODIFY` / `DELETE` sentences, plus sentences used by this round's Feature that have no stepdef yet.
 - One `[P]` task per DSL sentence; sentences whose semantics are unchanged and already have stepdefs are not listed.
-- `[BDD-ALIGN]` only changes existing tests to express the latest `StepDef 實作語意`, writing no product code.
+- `[BDD-ALIGN]` only changes existing tests to express the latest `StepDef Implementation Semantics`, writing no product code.
 - `[BDD-REMOVE]` only removes or rewrites tests still protecting old truth, writing no product code.
 - `[BDD-RED]` writes the stepdef per that `dsl.md` row; when done, this sentence can be run, with failures only from assertions or product behavior.
 

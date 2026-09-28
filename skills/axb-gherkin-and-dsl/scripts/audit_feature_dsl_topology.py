@@ -104,10 +104,10 @@ def parse_dsl(path: Path, scope: str, errors: list[str]) -> list[DslRow]:
             continue
 
         header = split_markdown_row(line)
-        # The first column header must be exactly "DSL 句型" — this literal is a
-        # fixed contract token and must not be translated (see STANDARDS.md
-        # "Project Language"); translating it makes the audit match nothing.
-        if not header or header[0].strip() != "DSL 句型":
+        # The first column header must be exactly "DSL Sentence" (the legacy
+        # upstream Chinese header "DSL 句型" is also accepted). This literal is a
+        # fixed contract token and must not be translated (see STANDARDS.md).
+        if not header or header[0].strip() not in {"DSL Sentence", "DSL 句型"}:
             index += 1
             continue
 
@@ -127,12 +127,12 @@ def parse_dsl(path: Path, scope: str, errors: list[str]) -> list[DslRow]:
             match = re.fullmatch(r"`(.+)`", cells[0].strip())
             if match is None:
                 errors.append(
-                    f"{path}:{line_number} the DSL 句型 cell must be a single backticked sentence"
+                    f"{path}:{line_number} the DSL Sentence cell must be a single backticked sentence"
                 )
                 continue
             phrase = match.group(1).replace(r"\|", "|").strip()
             if not phrase:
-                errors.append(f"{path}:{line_number} the DSL 句型 must not be empty")
+                errors.append(f"{path}:{line_number} the DSL Sentence must not be empty")
                 continue
             rows.append(DslRow(phrase=phrase, path=path, line=line_number, scope=scope))
 
@@ -246,7 +246,7 @@ def audit(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
     for phrase, rows in sorted(rows_by_phrase.items()):
         if len(rows) > 1:
             errors.append(
-                f"DSL 句型 `{phrase}` has multiple authoritative locations: "
+                f"DSL Sentence `{phrase}` has multiple authoritative locations: "
                 f"{format_locations(rows, root)}"
             )
 

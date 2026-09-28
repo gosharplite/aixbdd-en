@@ -76,11 +76,11 @@
 **DSL Reference**:
 - Each sentence belongs to exactly one authoritative `dsl.md`: the same-module `specs/truth/features/{interface}/{module}/dsl.md`, or the interface root `specs/truth/features/{interface}/dsl.md`. Do not scan other modules.
 - This round's sentences all live in the same module `specs/truth/features/{{INTERFACE_KIND}}/{{MODULE}}/dsl.md`. {{PHASE3_ROOT_DSL_STATUS}}
-- How to read: match the task title's sentence to that row in the file, taking `StepDef 實作語意` as the test code semantics. For Given / When read `怎麼做`, `權威狀態落地`, `回寫`; for Then read `必查` (`呈現結果`, `權威狀態`, `再讀確認`).
+- How to read: match the task title's sentence to that row in the file, taking `StepDef Implementation Semantics` as the test code semantics. For Given / When read `How`, `State landing`, `Write-back`; for Then read `Must-check` (`Presented Result`, `Authoritative State`, `Re-read Confirmation`).
 - `truth-delta.md` only tells whether this sentence is ADD / MODIFY / DELETE. Semantics follow that `dsl.md` row; do not invent from feature wording or old stepdefs.
 
 **Markers**:
-- `[BDD-ALIGN]`: `MODIFY`. The existing stepdef is still there but its semantics are old truth. Change the tests per that `dsl.md` row so they express the latest `StepDef 實作語意`.
+- `[BDD-ALIGN]`: `MODIFY`. The existing stepdef is still there but its semantics are old truth. Change the tests per that `dsl.md` row so they express the latest `StepDef Implementation Semantics`.
 - `[BDD-REMOVE]`: `DELETE`. This sentence is no longer truth. Remove or rewrite the stepdef / assertion still bound to this sentence, leaving no tests protecting old behavior.
 - `[BDD-RED]`: `ADD`, or sentences used by this round's Feature with no stepdef yet. Write the stepdef per that `dsl.md` row. When done, this sentence can be run, with failures only from assertions or product behavior — never undefined steps.
 - All three markers touch only the test layer, writing no product code.

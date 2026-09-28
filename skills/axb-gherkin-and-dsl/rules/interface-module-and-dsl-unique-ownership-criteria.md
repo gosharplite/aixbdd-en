@@ -32,7 +32,7 @@ ciphers, match turns, three-guess, health & cipher-swap, and room chat.
 
 - Level: `MUST`
 - A DSL sentence used by only one module, or valid only in one module's context, must live in `{interface}/{module}/dsl.md`.
-- A DSL row may live in `{interface}/dsl.md` only if it is used across two or more modules and its `DSL 句型`, `Gherkin 參數`, `Data Table 參數`, `預設參數`, and implementation contract are all identical.
+- A DSL row may live in `{interface}/dsl.md` only if it is used across two or more modules and its `DSL Sentence`, `Gherkin Params`, `Data Table Params`, `Default Params`, and implementation contract are all identical.
 - If any parameter type, DataTable field, default value, authoritative state, wait condition, write-back, or verification responsibility differs, it is not the same shared contract; it must stay in its respective module and be rewritten into different sentences that can identify their semantics.
 - The interface root `dsl.md` is a cross-module contract — not a master list of all DSL rows, nor a staging area for centralizing first and splitting later as convenient.
 

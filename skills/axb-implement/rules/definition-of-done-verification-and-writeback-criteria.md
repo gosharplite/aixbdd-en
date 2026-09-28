@@ -76,7 +76,7 @@ Did a lot of things today; it should be almost usable.
 - Level: `MUST`
 - Setup's completion condition: the packages and configuration written in that rule are in place, and a smoke-test proves connectivity. Do not require this round's Feature to be all green, and do not write message-sending semantics into Setup.
 - Foundational's completion condition: the implementation code, test-shared components, entry points, fixtures, helpers, or touchpoint skeletons "only-do" items of that rule exist, and nothing crosses the "not-do". Do not require DSL semantics to be aligned, and do not require product code to be green.
-- Phase 3's `[BDD-ALIGN]` / `[BDD-REMOVE]` / `[BDD-RED]` completion condition: that sentence's test semantics are aligned with the `dsl.md` row's `StepDef 實作語意` and can be run; failures may only be assertions or product behavior, never undefined steps. Do not require product code to be green.
+- Phase 3's `[BDD-ALIGN]` / `[BDD-REMOVE]` / `[BDD-RED]` completion condition: that sentence's test semantics are aligned with the `dsl.md` row's `StepDef Implementation Semantics` and can be run; failures may only be assertions or product behavior, never undefined steps. Do not require product code to be green.
 - Phase 3 review's completion condition: running all of this round's Feature phases' `Test Scope` yields no undefined steps; the review subagent reports no issues.
 - `[BDD-GREEN]`'s completion condition: that phase's `Test Scope` is all green.
 - `[CODE-REMOVE]` / `[REGRESSION]`'s completion condition: the obsolete product behavior is removed, the `Test Scope` passes, and the old behavior is no longer protected by tests.

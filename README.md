@@ -29,13 +29,15 @@ are preserved. Translation decisions:
   as-is.
 - The **default project language is flipped to English** (STANDARDS.md "Project Language" section and
   the §2/§3 defaults); it remains project-declarable, so projects may still declare any language.
-- **Fixed DSL contract tokens stay in Chinese**, per `axb-gherkin-and-dsl/STANDARDS.md`'s "Project
-  Language" section: the meta-schema field tokens (`DSL 句型`, `Gherkin 參數`, `Data Table 參數`,
-  `預設參數`, `…實作語意`), the `不支援`/`支援：` cell literals, and the §5.1/§5.2 sub-labels
-  (`怎麼做`, `權威狀態落地`, `回寫`, `不必查`/`必查`, `呈現結果`, `權威狀態`, `再讀確認`, `跨視角`,
-  `不該發生`). The audit script requires the first table column header to be exactly `DSL 句型`;
-  translating these tokens would break it silently. Everything else — including example Gherkin,
-  parameter keys, and file names — follows the project-declared language and is translated.
+- **Fixed DSL contract tokens are English**: `DSL Sentence`, `Gherkin Params`, `Data Table Params`,
+  `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, and the §5.1/§5.2
+  sub-labels (`How`, `State landing`, `Write-back`, `No-check`/`Must-check`, `Presented Result`,
+  `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`, `Should Not Happen`). They were
+  Chinese in upstream AIxBDD and are renamed in this repo; the audit script accepts both the English
+  header `DSL Sentence` and the legacy Chinese header `DSL 句型`, so upstream-era DSL files still audit
+  cleanly. These tokens remain fixed — do not translate them per project language. The Chinese Gherkin
+  keywords in the audit script's `STEP_RE` are kept as parser locale support (Gherkin sentence language
+  is project-declarable).
 
 ## Attribution & license
 

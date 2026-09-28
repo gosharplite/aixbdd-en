@@ -15,7 +15,7 @@ disable-model-invocation: true
 - After finishing a task set, verify it, immediately write back the `[X]` in `tasks.md`, then recompute the next one. No next task set may start before the write-back.
 - Strictly enforce that steps must not be skipped. `don't stop until deliver` is not permission to skip steps.
 - The Feature phase is still sequential. Only `[BDD-GREEN]` and `[BDD-REFACTOR]` delegate to `/axb-bdd`, taking that phase's `Test Scope` as the scope.
-- Phase 3's `[BDD-ALIGN]`, `[BDD-REMOVE]`, `[BDD-RED]` do NOT delegate to `/axb-bdd`; a subagent reads the `StepDef 實作語意` of the corresponding `dsl.md` row and writes the test layer.
+- Phase 3's `[BDD-ALIGN]`, `[BDD-REMOVE]`, `[BDD-RED]` do NOT delegate to `/axb-bdd`; a subagent reads the `StepDef Implementation Semantics` of the corresponding `dsl.md` row and writes the test layer.
 - `[WITNESS]` tasks do NOT delegate to `/axb-bdd` (they hit unit/fault-injection tests directly, executed per their Test Scope and Falsifier; the DoD requires passing the discriminating mutation, clear failure attribution, and revert-and-re-green).
 - Before Phase 3 review passes, Feature Green must not be entered.
 - After all tasks are `[X]`, ask whether to git commit; do not commit automatically.

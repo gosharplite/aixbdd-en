@@ -16,8 +16,8 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 | Gherkin parameter key names (§3) | project-declared | must match the language of the Gherkin sentences |
 | Gherkin sentences, keywords, and prose | project-declared | the audit script `audit_feature_dsl_topology.py`'s `STEP_RE` already accepts both English and Chinese keywords |
 | §3's quoting and DataTable conventions | language-independent | always followed, unchanged with language |
-| §4/§5's DSL meta-schema field tokens (`DSL 句型`, `Gherkin 參數`, `Data Table 參數`, `預設參數`, implementation-semantics column) | **fixed** | the audit script identifies a table by its first column header being exactly `DSL 句型`; translating that token makes the audit silently match zero and every step be misjudged as missing a DSL |
-| §5.2's channel labels (`呈現結果` / `權威狀態` / `再讀確認` / `跨視角` / `不該發生`) and §5.1's Given / When sub-labels (`怎麼做` / `權威狀態落地` / `回寫` / `不必查`) | **fixed** | cross-project shared contract vocabulary |
+| §4/§5's DSL meta-schema field tokens (`DSL Sentence`, `Gherkin Params`, `Data Table Params`, `Default Params`, implementation-semantics column) | **fixed** | the audit script identifies a table by its first column header being exactly `DSL Sentence` (the legacy upstream Chinese header `DSL 句型` is also accepted); translating that token makes the audit silently match zero and every step be misjudged as missing a DSL |
+| §5.2's channel labels (`Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen`) and §5.1's Given / When sub-labels (`How` / `State landing` / `Write-back` / `No-check`) | **fixed** | cross-project shared contract vocabulary |
 
 - In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4/§5 meta-schema tokens and contract channel vocabulary.
 - This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in English") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
@@ -64,10 +64,10 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 
 Every DSL row in the interface root and module `dsl.md` must have at least the following (the field tokens below are fixed contract vocabulary and do not change with the project language; see the "Project Language" section):
 
-- `DSL 句型`
-- `Gherkin 參數`
-- `Data Table 參數`
-- `預設參數`
+- `DSL Sentence`
+- `Gherkin Params`
+- `Data Table Params`
+- `Default Params`
 - implementation-semantics column
 
 ### 4.1 Gherkin Parameter Column
@@ -79,7 +79,7 @@ Every DSL row in the interface root and module `dsl.md` must have at least the f
 ### 4.2 Data Table Parameter Column
 
 - Each sentence must state explicitly whether DataTable is supported
-- If not supported, write only `不支援`
+- If not supported, write only `Not supported`
 - If supported, list:
   - required / optional
   - type
@@ -99,10 +99,10 @@ The purpose of the backend DSL is not merely to tell the AI which endpoint to hi
 
 Given / When must write at least:
 
-- `怎麼做` (how to do it)
-- `權威狀態落地` (authoritative state landing)
-- `回寫` (write-back)
-- `不必查` (no need to check)
+- `How` (how to do it)
+- `State landing` (authoritative state landing)
+- `Write-back` (write-back)
+- `No-check` (no need to check)
 
 Principles:
 
@@ -114,11 +114,11 @@ Principles:
 
 Then is written as a "verification contract", not force-fitted into a fixed template, but at least pick the relevant ones from these channels:
 
-- `呈現結果`: this API response
-- `權威狀態`: store / DB truth
-- `再讀確認`: still holds on a second read
-- `跨視角`: whether another player sees the same
-- `不該發生`: must not be changed, must not be created, must not be leaked
+- `Presented Result`: this API response
+- `Authoritative State`: store / DB truth
+- `Re-read Confirmation`: still holds on a second read
+- `Cross-Perspective`: whether another player sees the same
+- `Should Not Happen`: must not be changed, must not be created, must not be leaked
 
 Principles:
 

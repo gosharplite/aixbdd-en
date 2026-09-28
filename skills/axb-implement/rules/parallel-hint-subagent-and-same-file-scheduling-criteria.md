@@ -89,7 +89,7 @@ Or T008–T011 only submit patches and wait for T015 to merge.
 - This example is good because it forms a loop gate.
 
 ```md
-T015 review reports T012's stepdef did not read `權威狀態落地`.
+T015 review reports T012's stepdef did not read `State landing`.
 After fixing, review again. Only with zero issues the second time is T016 [BDD-GREEN] unlocked.
 ```
 

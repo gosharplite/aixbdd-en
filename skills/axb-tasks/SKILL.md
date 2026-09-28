@@ -28,7 +28,7 @@ disable-model-invocation: true
 
 1. READ Read `templates/tasks.md` and `templates/tasks.example.md` to confirm Phase 3's fixed sections: `DSL Reference`, `Markers`, `Shared Must Read`, `Boundary`, `Parallel Hint`.
 2. THINK Mark each inventoried sentence with `[BDD-ALIGN]`, `[BDD-REMOVE]`, or `[BDD-RED]`; one `[P]` task per DSL sentence; touchpoints prefer independent files to avoid parallel write conflicts; the last task is the subagent review.
-3. THINK Write the `DSL Reference` (each sentence's authoritative `dsl.md` and the method for reading `StepDef 實作語意`), `Markers`, the sentences to read this round, `Boundary`, and `Parallel Hint`.
+3. THINK Write the `DSL Reference` (each sentence's authoritative `dsl.md` and the method for reading `StepDef Implementation Semantics`), `Markers`, the sentences to read this round, `Boundary`, and `Parallel Hint`.
 4. THINK This phase must not schedule product code tasks.
 
 ## Phase 4 -- Create Feature phases and Witness pins
