@@ -28,19 +28,20 @@ requirements). AIxBDD splits it:
 
 ## The workflow (skills in order)
 
-1. `/axb-constitution` — set artifact governance rules
-2. `/axb-specify` — create a numbered plan package with `spec.md` + checklist
-3. `/axb-clarify-over-specs` — (optional) interactive requirement clarification
-4. **Parallel**: PM runs `/axb-spec-by-example` (acceptance Gherkin) + `/axb-ui-plan` (HTML
+1. `/axb-constitution` (PM/RD) — set artifact governance rules
+2. `/axb-specify` (PM) — create a numbered plan package with `spec.md` + checklist
+3. `/axb-clarify-over-specs` (PM) — (optional) interactive requirement clarification
+4. **Parallel**: PM runs `/axb-spec-by-example` (PM) (acceptance Gherkin) + `/axb-ui-plan` (PM) (HTML
    prototypes for a web interface; rendered terminal frames for a CLI TUI); RD runs
-   `/axb-technical-research`
-5. `/axb-system-analysis` — orchestrates `/axb-api-plan`, `/axb-data-plan` via dependency waves
-6. `/axb-dsl-refine` — split acceptance criteria into executable front/back-end Gherkin + DSL
-7. `/axb-tasks` — generate BDD task list (`tasks.md`)
-8. `/axb-implement` — One-Shot TDD execution (red → green → refactor via `/axb-bdd`)
+   `/axb-technical-research` (RD)
+5. `/axb-system-analysis` (RD) — orchestrates `/axb-api-plan` (RD), `/axb-data-plan` (RD) via
+   dependency waves
+6. `/axb-dsl-refine` (RD) — split acceptance criteria into executable front/back-end Gherkin + DSL
+7. `/axb-tasks` (RD) — generate BDD task list (`tasks.md`)
+8. `/axb-implement` (RD) — One-Shot TDD execution (red → green → refactor via `/axb-bdd` (RD))
 
-Supporting skills: `/axb-clarify` (user interviews), `/axb-truth-delta` (truth change tracking),
-`/axb-gherkin-and-dsl` (Gherkin/DSL standards + a Python topology audit script).
+Supporting skills: `/axb-clarify` (PM/RD) (user interviews), `/axb-truth-delta` (RD) (truth change
+tracking), `/axb-gherkin-and-dsl` (PM/RD) (Gherkin/DSL standards + a Python topology audit script).
 
 ### Developing CLI Applications
 
