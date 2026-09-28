@@ -29,9 +29,9 @@ guidance.
 aixbdd-en — English translation of aixbdd-tmg
 
 This repository is an English translation (a derivative work) of aixbdd-tmg.
-Every file has been translated from the original Traditional Chinese; file
-names under skills/axb-constitution/rules/ have additionally been renamed
-into English. All other structure, semantics, and content are preserved.
+Every file has been translated from the original Traditional Chinese; rule
+filenames under skills/*/rules/ have additionally been renamed into English.
+All other structure, semantics, and content are preserved.
 
 The upstream attribution notice above is reproduced verbatim as required by
 the Apache License, Version 2.0, Section 4(d).

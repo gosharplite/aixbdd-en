@@ -1,4 +1,4 @@
-┌─ tell-me-go · running ────────────────────────────────────────────┐
+┌─ tell-me-go · running ───────────────────────────────────────────┐
 │ deploy to staging with version 015                               │
 │                                                                  │
 │  Steps                                       Recent output       │
@@ -8,5 +8,5 @@
 │                                                                  │
 │                                                                  │
 │  model: same-as-session                     tokens: 12,341/1M    │
-│  Esc abort · ? help                                            │
+│  Esc abort · ? help                                              │
 └──────────────────────────────────────────────────────────────────┘

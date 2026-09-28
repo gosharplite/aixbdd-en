@@ -5,7 +5,7 @@
 │  {{EDITOR_LINE_1}}                                               │
 │  {{EDITOR_LINE_2}}▏                                              │
 │                                                                  │
-│  Suggestions                                                            │
+│  Suggestions                                                     │
 │  {{SUGGESTION_1}}                                                │
 │  {{SUGGESTION_2}}                                                │
 │  {{SUGGESTION_3}}                                                │
