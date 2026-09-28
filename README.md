@@ -27,6 +27,8 @@ are preserved. Translation decisions:
   references `axb-implement`'s `rules/definition-of-done-verification-and-writeback-criteria.md`).
 - Code identifiers, file paths, and skill names (e.g., `/axb-clarify`, `CONSTITUTION.md`) are kept
   as-is.
+- The **default project language is flipped to English** (STANDARDS.md "Project Language" section and
+  the §2/§3 defaults); it remains project-declarable, so projects may still declare any language.
 - **Fixed DSL contract tokens stay in Chinese**, per `axb-gherkin-and-dsl/STANDARDS.md`'s "Project
   Language" section: the meta-schema field tokens (`DSL 句型`, `Gherkin 參數`, `Data Table 參數`,
   `預設參數`, `…實作語意`), the `不支援`/`支援：` cell literals, and the §5.1/§5.2 sub-labels

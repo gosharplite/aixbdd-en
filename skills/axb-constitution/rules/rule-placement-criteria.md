@@ -41,7 +41,7 @@
 - This example is good because language consistency is used by multiple artifacts together.
 
 ````md
-## Rule 1 - Descriptive text must be written in Traditional Chinese
+## Rule 1 - Descriptive text must be written in English
 ````
 
 ## Bad Example

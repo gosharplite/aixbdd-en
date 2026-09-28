@@ -1,7 +1,7 @@
 # Rule 1 - `ui/ui-plan.md` is the control plane; prototypes are the reviewable product surface
 
 - Level: `MUST`
-- This criteria covers both media: web／`frontend` HTML prototypes (`ui/*.html`), and interactive CLI terminal prototypes (`ui/screens/*.txt`).
+- This criteria covers both media: web/`frontend` HTML prototypes (`ui/*.html`), and interactive CLI terminal prototypes (`ui/screens/*.txt`).
 - `axb-ui-plan`'s output order must be: finalize `ui/ui-plan.md` first, then produce the corresponding medium's prototype from that plan.
 - `ui/ui-plan.md`'s responsibility is organizing the interface scope, medium, screens & flows, states, verification, and prototype output planning.
 - The web prototype (`ui/*.html`) is responsible for landing the above plan as a high-fidelity static prototype that is clickable, navigable, and lets you feel the product rhythm.

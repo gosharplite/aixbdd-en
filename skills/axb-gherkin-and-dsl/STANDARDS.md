@@ -6,8 +6,8 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 
 ## Project Language
 
-- By default this standard assumes artifacts are written in **Traditional Chinese**, but the language is **declared by the project, not hard-fixed by this standard**.
-- A project MAY override the default language. The declaration must land in a **named home** (in order): the project's `.agents/constitution/shared.md`, the project's decision records (ADRs, e.g. `decisions/NNNN-*.md`), or an explicit constraint in `spec.md`. When no declaration is found, the default is Traditional Chinese.
+- By default this standard assumes artifacts are written in **English**, but the language is **declared by the project, not hard-fixed by this standard**.
+- A project MAY override the default language. The declaration must land in a **named home** (in order): the project's `.agents/constitution/shared.md`, the project's decision records (ADRs, e.g. `decisions/NNNN-*.md`), or an explicit constraint in `spec.md`. When no declaration is found, the default is English.
 - The override **covers only the "project-declared language" parts**; the following DSL contract vocabulary is **fixed** and does not change with the project language:
 
 | Aspect | Language | Basis |
@@ -20,7 +20,7 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 | §5.2's channel labels (`呈現結果` / `權威狀態` / `再讀確認` / `跨視角` / `不該發生`) and §5.1's Given / When sub-labels (`怎麼做` / `權威狀態落地` / `回寫` / `不必查`) | **fixed** | cross-project shared contract vocabulary |
 
 - In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4/§5 meta-schema tokens and contract channel vocabulary.
-- This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in Traditional Chinese") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
+- This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in English") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
 
 ## 1. Gherkin Language Boundaries & Sentence Convergence
 
@@ -36,7 +36,7 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 
 ## 2. Feature / Rule / Example Structure
 
-- Split feature files by system functional aspect first; file names default to Traditional Chinese (the language may be overridden by project declaration per the "Project Language" section) and must clearly express the action or aspect under test.
+- Split feature files by system functional aspect first; file names default to English (the language may be overridden by project declaration per the "Project Language" section) and must clearly express the action or aspect under test.
 - `Rule` must be atomic: one Rule carries exactly one subject, and its multiple `Then` / `And` must be entailed by that subject's outcome (entailment). For criteria and the calibration set, see `axb-dsl-refine`'s `rules/interface-gherkin-atomization-and-single-act-criteria.md` Rule 2; non-entailed assertions must be split into new Rules. An Example title that merely sounds like another rule is only a smell, not a criterion.
 - `Example` should describe data scenarios, not just repeat the Rule's name.
 - `Background` is used only when, within the same feature, multiple Examples genuinely share the same setup, and extracting it would not make the Examples harder to read.
@@ -58,7 +58,7 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 - In-sentence string parameters use double quotes: `"Alice"`, `"1234"`, `"waiting"`.
 - In-sentence integer parameters have no quotes: `1`, `2`.
 - Values in DataTables are never quoted.
-- Parameter key names default to Traditional Chinese and should match the spec as closely as possible, e.g. `玩家` (player), `配對碼` (match code), `密文` (cipher), `猜測` (guess); the language may be overridden by project declaration per the "Project Language" section, and must be consistent with that project's Gherkin sentence language.
+- Parameter key names default to English and should match the spec as closely as possible, e.g. `player`, `match code`, `cipher`, `guess`; the language may be overridden by project declaration per the "Project Language" section, and must be consistent with that project's Gherkin sentence language.
 
 ## 4. DSL Required Fields
 

@@ -1,6 +1,6 @@
 ---
 name: axb-ui-plan
-description: Executed by the PM after spec and acceptance Gherkin are confirmed; based on the plan package's `spec.md`, confirmed `features/acceptance/**`, and existing `ui/**`, it produces plan-side `ui/**` design and reviewable prototypes for the PM to review before handing off to RD. Choose the medium by interface kind and interaction surface: web／`frontend` goes HTML mode (`ui/*.html`); a `cli` shipping an interactive TUI goes terminal mode (`ui/screens/*.txt`, no HTML); a plain line-oriented `cli` is skipped, producing no ui-plan. `axb-ui-plan` is not a truth owner and writes nothing to `specs/truth/**`.
+description: Executed by the PM after spec and acceptance Gherkin are confirmed; based on the plan package's `spec.md`, confirmed `features/acceptance/**`, and existing `ui/**`, it produces plan-side `ui/**` design and reviewable prototypes for the PM to review before handing off to RD. Choose the medium by interface kind and interaction surface: web/`frontend` goes HTML mode (`ui/*.html`); a `cli` shipping an interactive TUI goes terminal mode (`ui/screens/*.txt`, no HTML); a plain line-oriented `cli` is skipped, producing no ui-plan. `axb-ui-plan` is not a truth owner and writes nothing to `specs/truth/**`.
 disable-model-invocation: true
 ---
 
@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 `axb-ui-plan` first selects the medium per this round's interface kind and interaction surface, then produces the corresponding artifacts:
 
-- **web／`frontend` → HTML mode**: keep current behavior; prototypes are `ui/*.html` (clickable, navigable high-fidelity static pages).
+- **web/`frontend` → HTML mode**: keep current behavior; prototypes are `ui/*.html` (clickable, navigable high-fidelity static pages).
 - **`cli` with a TUI → terminal mode**: when the CLI presents a **persistent, multi-block, stateful interaction surface** (screens/panels, keybindings, popups, live state, repainting on input), use terminal mode; prototypes are `ui/screens/*.txt` (frames consistent with the actual terminal rendering), **producing no HTML**.
 - **`cli` plain → skipped**: a plain line-oriented CLI (commands, flags, stdout/stderr, exit codes — no persistent interaction surface) produces no ui-plan; its contract is carried by `/axb-dsl-refine` via `specs/truth/features/cli/**`.
 - The criterion is the **interaction surface**, not whether the name contains CLI; if undecidable, call `/axb-clarify` first — do not assume.
