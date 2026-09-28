@@ -65,6 +65,22 @@ When developing a CLI application (no web frontend or HTTP/REST API), the workfl
    contract and acceptance test runner. Since no API/data/UI planner applies, `/axb-system-analysis`
    records no planner for it and carries the CLI end forward to its contract owner `/axb-dsl-refine`.
 
+### Resolving PR and Review Findings
+
+When resolving architect or peer review findings on a pull request, modifying files under both implementation code and `specs/` is expected and required to prevent specification drift:
+
+1. **Keep `specs/truth/**` synchronized with code**:
+   - **Contracts**: Update `specs/truth/contracts/**` if endpoints, payloads, schemas, or status codes change.
+   - **Data Models**: Update `specs/truth/data/**` if tables, relationships, fields, or indexes change.
+   - **Techstack**: Update `specs/truth/techstack.md` if architectural choices or library selections change.
+   - **Features & DSL**: Update `specs/truth/features/**` and `dsl.md` if business rules, step definitions, or acceptance assertions change.
+2. **Log changes in `truth-delta.md`**: Record any changes made to `specs/truth/**` in the plan's `specs/plans/NNN-<slug>/truth-delta.md` (updating the corresponding truth owner's section with `MODIFY`, `ADD`, or `DELETE` and citing the review finding as the reason).
+3. **Audit DSL changes**: If any feature or `dsl.md` files were modified, run the topology audit script to verify syntax and cross-references:
+   ```bash
+   python3 skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root specs/truth/features
+   ```
+4. **Code-only refactorings**: Internal refactorings, optimizations, or renames that do not alter external behavior or contracts do not touch `specs/` — update the production code and tests directly.
+
 ## Notes
 
 - **Roles**: `roles/pm.yaml` and `roles/rd.yaml` role configs live in the upstream
