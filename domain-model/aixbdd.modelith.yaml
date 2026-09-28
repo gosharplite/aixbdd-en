@@ -1,0 +1,630 @@
+# yaml-language-server: $schema=https://modelith.sh/schema/domain-model/v1.json
+kind: DomainModel
+version: v1
+title: aixbdd — AI × BDD Workflow
+description: >
+  The canonical domain model of the AIxBDD development workflow: how a `PlanPackage`
+  travels from PM-defined acceptance Gherkin through system analysis and truth
+  artifacts to executable BDD tasks and implementation — with exactly one
+  authoritative owner per truth specification and a per-package truth-delta ledger.
+
+glossary:
+  PM: >
+    The product role that owns requirements: runs the specify, spec-by-example and
+    UI-plan skills, reviews the resulting artifacts, and defines what counts as
+    passing acceptance.
+  RD: >
+    The engineering role that turns accepted requirements into system design and
+    working code: runs the research, analysis, planning, truth-owner and
+    implementation skills.
+  Rule: >
+    An atomic business-rule block inside a Gherkin feature; its `Example`s exercise
+    exactly that rule and nothing broader. Used by both acceptance and interface
+    features.
+  Example: >
+    One concrete data-situation block under a `Rule`: a Given/When/Then journey
+    describing premise, behavior, and expected outcome, judgeable as pass or fail.
+
+enums:
+  PlanStatus:
+    description: The lifecycle state of a `PlanPackage`.
+    values:
+      - name: active
+        definition: The package is being produced — artifacts are still being written and reviewed.
+      - name: delivered
+        definition: >
+          The package is frozen history — all tasks are done and verified; later
+          rounds never modify it.
+  InterfaceKind:
+    description: The system boundary an `Interface` structures.
+    values:
+      - name: backend
+        definition: The API boundary — executable truth lives under `features/backend/**`.
+      - name: frontend
+        definition: The web UI boundary — executable truth lives under `features/frontend/**`.
+      - name: cli
+        definition: >
+          The CLI/terminal boundary — executable truth lives under
+          `features/cli/**`.
+
+  PrototypeMedium:
+    description: The medium a `Prototype` renders in.
+    values:
+      - name: web
+        definition: An HTML page under `ui/*.html`, for a web / `frontend` interface.
+      - name: terminal
+        definition: >
+          A rendered terminal frame under `ui/screens/*.txt`, for a `cli`
+          interface that ships a TUI.
+  DeltaAction:
+    description: The action a `DeltaEntry` reports for a truth specification.
+    values:
+      - name: add
+        definition: The truth specification was created this round.
+      - name: modify
+        definition: The truth specification was changed this round.
+      - name: delete
+        definition: The truth specification was removed this round.
+      - name: noop
+        definition: >
+          The truth area was checked against the round's changes and needed no
+          change — recorded to prove the check happened.
+
+entities:
+  PlanPackage:
+    definition: >
+      A numbered iteration container (`NNN-<slug>` under `specs/plans/`) that holds
+      every artifact produced in one development round. Each new requirement starts a
+      fresh `PlanPackage`; delivered packages are frozen history and are never
+      modified by later rounds. There is no separate round concept — the package is
+      the round.
+    attributes:
+      - name: number
+        type: string
+        description: The zero-padded sequence number (`NNN`), unique across packages.
+      - name: slug
+        type: string
+        description: Short kebab-case name of the round's theme.
+      - name: status
+        type: PlanStatus
+        description: Whether the package is being produced or frozen as history.
+    relationships:
+      - entity: Spec
+        cardinality: "1:1"
+        ownership: owned
+      - entity: AcceptanceFeature
+        cardinality: "1:n"
+        ownership: owned
+      - entity: UIPlan
+        cardinality: "1:0..1"
+        ownership: owned
+      - entity: Research
+        cardinality: "1:0..1"
+        ownership: owned
+      - entity: AnalysisPlan
+        cardinality: "1:0..1"
+        ownership: owned
+      - entity: Task
+        cardinality: "1:n"
+        ownership: owned
+      - entity: TruthDelta
+        cardinality: "1:1"
+        ownership: owned
+    actions:
+      - name: create
+        actor: Skill
+        preserves: [fresh-package-per-round]
+        description: >
+          axb-specify creates the package with its `Spec`, requirements checklist,
+          and `TruthDelta` skeleton.
+    invariants:
+      - id: plan-package-frozen
+        statement: >
+          A delivered `PlanPackage` is frozen history: later rounds never modify its
+          artifacts.
+      - id: fresh-package-per-round
+        statement: >
+          Every new round starts a fresh `PlanPackage`; requirements are never
+          re-opened inside an old package.
+
+  Spec:
+    definition: >
+      The requirements artifact of a `PlanPackage`: user stories, acceptance criteria,
+      boundaries, and a requirements checklist. Written by the `PM` via axb-specify
+      and optionally refined through interactive clarification. It is the authority
+      the `RD` side plans against, and is never edited by the `RD` side.
+    invariants:
+      - id: spec-pm-authored
+        statement: >
+          Only the `PM` edits a `Spec`; the `RD` side escalates gaps through
+          clarification instead of editing it.
+
+  AcceptanceFeature:
+    definition: >
+      A PM-readable Gherkin file (`features/acceptance/*.feature`) expressing the
+      round's acceptance journeys as Rules and Examples in business language. It
+      contains no technical detail and no front/back-end split — those are introduced
+      later by axb-dsl-refine. It is the authoritative acceptance contract the
+      implementation is built against.
+    relationships:
+      - entity: InterfaceFeature
+        cardinality: "n:n"
+        ownership: referenced
+        note: >
+          axb-dsl-refine splits acceptance journeys into executable interface
+          features; coverage requires every acceptance rule to be carried by at
+          least one.
+    invariants:
+      - id: acceptance-business-language
+        statement: >
+          An `AcceptanceFeature` uses business language only — no API, selector, or
+          other technical detail, and no front/back-end split.
+      - id: acceptance-atomic-rules
+        statement: >
+          Each `Rule` in an `AcceptanceFeature` carries exactly one named subject:
+          every Then/And assertion must be entailed by that subject's outcome, and it
+          must be split when an assertion introduces a second subject or a fact the
+          outcome does not entail. This is the same criterion axb-dsl-refine applies
+          to interface rules; its operative form and calibration set live in that
+          skill's atomicity rule file. An Example title that reads like another `Rule`
+          is only a smell, not the test.
+
+  UIPlan:
+    definition: >
+      The UX plan of a `PlanPackage`: medium (web HTML pages or terminal frames),
+      screen inventory, flows, states, and error handling, produced by axb-ui-plan
+      after the acceptance Gherkin is confirmed. Present only when the round involves
+      a user-facing interface with a governed UX surface — a web frontend (HTML mode)
+      or a `cli` interface that ships a TUI (terminal mode); a plain line-oriented CLI
+      is skipped.
+    relationships:
+      - entity: Prototype
+        cardinality: "1:1..n"
+        ownership: owned
+    invariants:
+      - id: prototype-flows-cover-acceptance
+        statement: >
+          The `Prototype`s of a `UIPlan` cover the acceptance flows defined by the
+          round's `AcceptanceFeature`s.
+
+  Prototype:
+    definition: >
+      One mid-fidelity prototype surface produced from a `UIPlan`, in the medium its
+      interface calls for: an HTML page (`ui/*.html`) for a web / `frontend`
+      interface, or a rendered terminal frame (`ui/screens/*.txt`) for a `cli`
+      interface that ships a TUI. Prototypes cover the flows defined by the
+      acceptance Gherkin and are the PM's reviewable stand-in for the future
+      interface. They are plan-side artifacts, never system truth.
+    attributes:
+      - name: medium
+        type: PrototypeMedium
+        description: Whether this prototype is a web HTML page or a terminal frame.
+    invariants:
+      - id: prototype-plan-side-only
+        statement: >
+          A `Prototype` is a plan-side artifact and never becomes a `TruthArtifact`.
+
+  Research:
+    definition: >
+      The technical-decision artifact produced by axb-technical-research: candidate
+      options, adoption and rejection reasons, risks, and the resulting technology
+      choices. Each `Research` updates the current `Techstack` truth and is reviewed
+      before that update is accepted.
+    relationships:
+      - entity: Techstack
+        cardinality: "n:1"
+        ownership: referenced
+        note: Each `Research` updates the current `Techstack` truth.
+    invariants:
+      - id: research-precedes-techstack
+        statement: >
+          A `Techstack` update is applied only after the `Research` producing it has
+          been reviewed.
+
+  AnalysisPlan:
+    definition: >
+      The system-analysis artifact (`plan.md`) produced by axb-system-analysis: the
+      inventory of system interfaces, their classification, and the dependency-ordered
+      `Wave`s that delegate each interface to the appropriate planner skills. It never
+      redefines truth — it orchestrates who analyses what, in what order.
+    relationships:
+      - entity: Wave
+        cardinality: "1:1..n"
+        ownership: owned
+    invariants:
+      - id: analysis-plan-never-writes-truth
+        statement: >
+          An `AnalysisPlan` orchestrates analysis only; it never creates or modifies
+          a `TruthArtifact`.
+      - id: wave-covers-interfaces
+        statement: >
+          Every interface identified by an `AnalysisPlan` is either delegated to a
+          planner in at least one `Wave` or carried forward to its contract owner at
+          delivery.
+
+  Wave:
+    definition: >
+      A dependency-ordered group of planning work inside an `AnalysisPlan`. `Wave`s
+      sequence the analysis so that shared interfaces are planned before the ones
+      depending on them, and independent interfaces are grouped for parallel
+      delegation.
+    attributes:
+      - name: order
+        type: integer
+        description: The wave's position in the dependency sequence; lower runs earlier.
+    invariants:
+      - id: wave-dependency-ordered
+        statement: >
+          A `Wave` is scheduled only after the `Wave`s it depends on have completed.
+
+  TruthArtifact:
+    definition: >
+      The parent of every canonical truth specification under `specs/truth/**`: the
+      single source of truth that always reflects the current system rather than any
+      one round. Each `TruthArtifact` has exactly one owning skill that is the only
+      writer allowed to change it; everyone else reads it or records proposed changes
+      in the ledger.
+    attributes:
+      - name: location
+        type: string
+        description: Path under `specs/truth/**` where the artifact lives.
+    relationships:
+      - entity: Skill
+        cardinality: "n:1"
+        ownership: referenced
+        note: Governance ownership — exactly one skill is the sole writer of this truth artifact.
+    invariants:
+      - id: truth-single-owner
+        statement: >
+          Each `TruthArtifact` has exactly one owning `Skill`, which is the only
+          writer allowed to change it.
+      - id: truth-current
+        statement: >
+          A `TruthArtifact` always reflects the current system, never the view of a
+          single round.
+
+  Techstack:
+    subtypeOf: TruthArtifact
+    definition: >
+      The canonical technology-stack truth (`specs/truth/techstack.md`): the complete,
+      current technology choices of the system, not just the delta of the latest
+      round. Owned by axb-technical-research and kept current through each round's
+      `Research`.
+    invariants:
+      - id: techstack-complete
+        statement: >
+          The `Techstack` represents the complete current technology stack, not just
+          the latest round's delta.
+
+  Contract:
+    subtypeOf: TruthArtifact
+    definition: >
+      The canonical API contract truth (`specs/truth/contracts/**`, OpenAPI 3.0):
+      operations, schemas, responses, and the error model of the system's API
+      surface. Owned by axb-api-plan and produced when an `AnalysisPlan` wave
+      delegates an API interface.
+    invariants:
+      - id: contract-authoritative
+        statement: >
+          The system's API surface is defined only in the `Contract`; no other
+          artifact specifies API behavior.
+
+  DataModel:
+    subtypeOf: TruthArtifact
+    definition: >
+      The canonical data-model truth (`specs/truth/data/**`, DBML): tables, enums,
+      relationships, and lifecycle rules of the system's persisted or in-memory
+      state. Owned by axb-data-plan; it covers in-memory models as well as databases.
+    invariants:
+      - id: data-model-covers-all-state
+        statement: >
+          The `DataModel` covers every kind of system state, persisted and in-memory
+          alike.
+
+  Interface:
+    definition: >
+      A system boundary through which the software is exercised — backend (API),
+      frontend (web), or CLI (terminal) — structuring the executable truth under
+      `specs/truth/features/{interface}/`. Interface-level Gherkin and DSL live only
+      inside an `Interface`; feature files are never placed directly at the truth
+      root.
+    attributes:
+      - name: kind
+        type: InterfaceKind
+        description: Which boundary this `Interface` structures.
+    relationships:
+      - entity: Module
+        cardinality: "1:n"
+        ownership: owned
+      - entity: DSL
+        cardinality: "1:0..1"
+        ownership: owned
+        note: >
+          The interface-root shared `DSL` holding rows used across modules; present
+          only when such shared rows exist.
+    invariants:
+      - id: interface-features-nested
+        statement: >
+          Feature files live only inside a `Module`; an `Interface` root never
+          contains feature files directly.
+
+  Module:
+    definition: >
+      A functional grouping (e.g. customer, opportunity, pipeline) inside an
+      `Interface`. Modules carry the module's executable features and its own
+      module-level `DSL`; module boundaries are reused from existing truth rather
+      than invented per round.
+    attributes:
+      - name: name
+        type: string
+        description: Functional name of the grouping (e.g. customer, pipeline).
+    relationships:
+      - entity: InterfaceFeature
+        cardinality: "1:n"
+        ownership: owned
+      - entity: DSL
+        cardinality: "1:0..1"
+        ownership: owned
+        note: The module-level `DSL`; each `Module` has at most one.
+    invariants:
+      - id: module-boundary-reuse
+        statement: >
+          Module boundaries are reused from existing truth; a round does not invent
+          new `Module`s while a suitable one exists.
+
+  DSL:
+    subtypeOf: TruthArtifact
+    definition: >
+      A DSL vocabulary file (`dsl.md`) mapping Gherkin sentence patterns to their
+      implementation contracts: parameters, DataTable support, defaults, and
+      implementation semantics. It exists at two authority levels — the `Interface`
+      root for cross-module rows and the `Module` level for module-specific rows —
+      and each sentence pattern has exactly one authoritative row in this hierarchy.
+    relationships:
+      - entity: DSLRow
+        cardinality: "1:1..n"
+        ownership: owned
+    actions:
+      - name: move_row
+        actor: Skill
+        preserves: [dsl-single-authority, dsl-exact-one-match]
+        description: >
+          Move a `DSLRow` between the interface-root and module authority levels
+          when usage changes; the row's semantics stay unchanged.
+    invariants:
+      - id: dsl-single-authority
+        statement: >
+          A sentence pattern has exactly one authoritative `DSLRow` — either at the
+          `Interface` root or in a `Module`, never duplicated across levels.
+
+  DSLRow:
+    definition: >
+      One authoritative entry in a `DSL`: a single sentence pattern with its Gherkin
+      parameters, DataTable contract, default parameters, and implementation
+      semantics. When reading a feature, the interface-root and module `DSL`s are
+      merged, and every step must hit exactly one row — zero is a missing
+      specification, more than one is a duplicate authority.
+    attributes:
+      - name: pattern
+        type: string
+        description: The Gherkin sentence pattern this row authoritatively defines.
+    invariants:
+      - id: dsl-exact-one-match
+        statement: >
+          Merging the interface-root and module `DSL`s, every step of a feature must
+          match exactly one `DSLRow` — zero is a gap, more than one is an ambiguity.
+
+  InterfaceFeature:
+    subtypeOf: TruthArtifact
+    definition: >
+      An executable Gherkin feature file in the truth tree
+      (`specs/truth/features/{interface}/{module}/*.feature`) produced by
+      axb-dsl-refine from the PM's acceptance criteria. Every acceptance rule must be
+      carried by at least one `InterfaceFeature`, and each of its steps must match
+      exactly one `DSLRow` in the merged lookup.
+    invariants:
+      - id: acceptance-coverage
+        statement: >
+          Every acceptance rule is carried by at least one `InterfaceFeature`.
+
+  TruthDelta:
+    definition: >
+      The per-`PlanPackage` ledger (`truth-delta.md`) recording every truth change of
+      the round, with one section per truth owner. Initialized by axb-specify and
+      appended by the truth-owner skills; packages of earlier rounds keep their
+      ledgers frozen as history.
+    relationships:
+      - entity: DeltaEntry
+        cardinality: "1:1..n"
+        ownership: owned
+    actions:
+      - name: append_entry
+        actor: Skill
+        preserves: [delta-covers-all-owners]
+        description: >
+          A truth owner records its round's entries — add, modify, delete, or noop —
+          in its own section of the ledger.
+    invariants:
+      - id: delta-covers-all-owners
+        statement: >
+          Every truth owner records at least one `DeltaEntry` per round; a noop entry
+          satisfies this by proving the area was checked.
+
+  DeltaEntry:
+    definition: >
+      One row in a `TruthDelta`: an action (add, modify, delete or noop) on a truth
+      specification, with a change summary and a reason. Every truth owner records at
+      least one entry per round — a noop entry proves a truth area was checked
+      against the round's changes even when nothing needed to change.
+    attributes:
+      - name: action
+        type: DeltaAction
+        description: What happened to the truth specification this round.
+      - name: summary
+        type: string
+        description: Semantic-unit-level description of the change.
+      - name: reason
+        type: string
+        description: Why the change (or the noop) was warranted.
+    relationships:
+      - entity: TruthArtifact
+        cardinality: "n:1"
+        ownership: referenced
+        note: The truth specification this entry reports on.
+    invariants:
+      - id: delta-entry-cites-truth
+        statement: >
+          Each `DeltaEntry` names the truth specification it reports on and carries a
+          summary and a reason.
+
+  Task:
+    definition: >
+      One unit of work in a `PlanPackage`'s task list (`tasks.md`) produced by
+      axb-tasks: test-alignment, feature green or refactor, code-removal,
+      regression, or witness work, each with an execution marker. axb-implement
+      executes tasks in constraint-ordered batches, marking each done before
+      starting the next.
+    attributes:
+      - name: marker
+        type: string
+        description: >
+          Execution marker driving how the task runs (for example test alignment,
+          feature green, refactor, code removal, regression, or witness).
+      - name: done
+        type: boolean
+        description: Flipped to done only after the task's verification has passed.
+    actions:
+      - name: complete
+        actor: Skill
+        preserves: [task-strict-ordering]
+        description: Mark a verified task done in the task list before the next batch starts.
+    invariants:
+      - id: task-strict-ordering
+        statement: >
+          Implementation completes the current batch of `Task`s and marks them done
+          before any later task starts; no task is skipped.
+
+  Skill:
+    definition: >
+      One of the axb-* workflow skills — the executable SOPs of the methodology, each
+      owning specific artifacts and phases. `Skill`s are the only writers of the
+      artifacts they own; every other participant reviews or consumes their output.
+    attributes:
+      - name: name
+        type: string
+        description: Unique skill identifier (for example axb-specify, axb-bdd).
+    invariants:
+      - id: skill-scoped-writes
+        statement: >
+          A `Skill` writes only the artifacts it owns; changes outside its ownership
+          are escalated, never made directly.
+
+scenarios:
+  - name: PM defines a round
+    description: >
+      A new requirement arrives; the `PM` runs the specify, spec-by-example and
+      ui-plan skills to produce the round's plan-side artifacts for review.
+    actors: [PM, Skill]
+    steps:
+      - axb-specify creates a fresh `PlanPackage` with its `Spec` and `TruthDelta` skeleton.
+      - "The `PM` reviews the `Spec`: stories complete, criteria judgeable, boundaries covered."
+      - axb-spec-by-example renders the acceptance criteria into `AcceptanceFeature`s in business language.
+      - "axb-ui-plan selects its medium (HTML for a web interface, terminal frames for a TUI) and produces the `UIPlan` and its `Prototype`s covering the acceptance flows."
+      - "The `PM` confirms the Gherkin and prototypes — the round's acceptance contract is set."
+    invariants_touched:
+      [fresh-package-per-round, spec-pm-authored, acceptance-business-language,
+       acceptance-atomic-rules, prototype-flows-cover-acceptance, prototype-plan-side-only]
+
+  - name: RD plans the system
+    description: >
+      In parallel with the PM's later steps, the `RD` researches technology, then
+      analyses the system and delegates each interface to a planner via ordered
+      waves, producing the API and data truth.
+    actors: [RD, Skill]
+    steps:
+      - axb-technical-research writes the `Research` with options, reasons, and risks.
+      - "After review, the `Research`'s decisions are applied to the `Techstack` truth."
+      - axb-system-analysis writes the `AnalysisPlan` and orders the work into `Wave`s.
+      - "A later `Wave` delegates the API interface; axb-api-plan produces the `Contract` truth."
+      - "A later `Wave` delegates the data interface; axb-data-plan produces the `DataModel` truth."
+    invariants_touched:
+      [research-precedes-techstack, techstack-complete, analysis-plan-never-writes-truth,
+       wave-covers-interfaces, wave-dependency-ordered, contract-authoritative,
+       data-model-covers-all-state]
+
+  - name: Acceptance split into executable truth
+    description: >
+      axb-dsl-refine turns the PM's acceptance journeys into interface-level features
+      and DSL vocabulary, recording every change in the round's ledger.
+    actors: [RD, Skill]
+    steps:
+      - axb-dsl-refine reads the `AcceptanceFeature`s as the authoritative acceptance criteria.
+      - "It creates `InterfaceFeature`s inside the right `Module` of each `Interface`, reusing existing module boundaries."
+      - "Shared sentence patterns go to the interface-root `DSL`; module-specific ones go to the module `DSL`."
+      - "Each produced step is checked against the merged `DSL` lookup: exactly one `DSLRow` per step."
+      - axb-truth-delta appends a `DeltaEntry` per truth owner — including noop entries where nothing changed.
+      - "Every recorded change names the specific `TruthArtifact` it applies to."
+    invariants_touched:
+      [truth-single-owner, acceptance-coverage, interface-features-nested,
+       module-boundary-reuse, dsl-single-authority, dsl-exact-one-match,
+       delta-covers-all-owners, delta-entry-cites-truth]
+
+  - name: Second round with a minor spec change
+    description: >
+      A later round modifies existing behavior slightly and adds one feature: a fresh
+      package is created, truth is modified in place, and untouched areas record
+      noop entries while the old package stays frozen.
+    actors: [PM, RD, Skill]
+    steps:
+      - axb-specify starts a new `PlanPackage`; the `Spec` marks one behavior as modified and one feature as added.
+      - "The previous package is not touched — its artifacts and ledger remain frozen history."
+      - axb-dsl-refine updates the affected `InterfaceFeature` and moves one `DSLRow` to a different authority level without changing its semantics.
+      - "The `DataModel` gains a new table for the added feature."
+      - "Untouched truth areas record noop entries in the new package's `TruthDelta`."
+    invariants_touched:
+      [plan-package-frozen, fresh-package-per-round, spec-pm-authored,
+       dsl-single-authority, truth-current, delta-covers-all-owners]
+
+  - name: Implement to green
+    description: >
+      axb-implement executes the task list in constraint-ordered batches, writing
+      step definitions straight from the DSL implementation semantics until every
+      test is green.
+    actors: [RD, Skill]
+    steps:
+      - "axb-tasks has produced the `Task`s: alignment work first, then per-feature green and refactor."
+      - "Implementation completes the current batch and marks those `Task`s done before starting the next."
+      - "For each step definition, the merged `DSL` lookup resolves exactly one `DSLRow` and its implementation semantics are followed."
+      - "Focused tests run until the feature's scenarios are green; refactor happens only under green protection."
+    invariants_touched: [task-strict-ordering, dsl-exact-one-match, skill-scoped-writes]
+
+  - name: Duplicate authority caught by audit
+    description: >
+      A sentence pattern appears both at the interface root and inside a module DSL.
+      The audit flags the ambiguity and the row is consolidated to a single
+      authority level.
+    actors: [RD, Skill]
+    steps:
+      - "A feature step is found to match two `DSLRow`s — one in the interface-root `DSL`, one in the module `DSL`."
+      - "The audit reports the duplicate authority instead of silently picking one."
+      - axb-dsl-refine keeps the row at its correct level and removes the other, semantics unchanged.
+      - "Re-running the merged lookup, every step again matches exactly one row."
+    invariants_touched: [dsl-single-authority, dsl-exact-one-match, interface-features-nested]
+
+  - name: CLI end carried by the contract owner
+    description: >
+      A pure-CLI round inventorying a line-oriented terminal end (no TUI). No API,
+      data or UI planner applies, so the plan carries the end forward — at delivery,
+      not inside a `Wave` — to its contract owner, axb-dsl-refine, which writes
+      executable truth under the CLI `Interface`.
+    actors: [RD, Skill]
+    steps:
+      - "axb-system-analysis inventories a CLI end and records it as an `Interface` of the CLI kind."
+      - "No API, data or UI planner applies; the plan records the CLI end as carried forward to its contract owner at delivery."
+      - "A `cli` interface that ships a TUI instead gets a terminal-mode `UIPlan` (no HTML) from the PM, which system-analysis reviews but does not redo or re-plan."
+      - "axb-dsl-refine writes the CLI feature files under `specs/truth/features/cli/**`, reusing the module boundaries."
+      - "axb-truth-delta records the CLI feature and DSL change in the round's `TruthDelta`."
+    invariants_touched:
+      [wave-covers-interfaces, analysis-plan-never-writes-truth, prototype-plan-side-only,
+       truth-single-owner, interface-features-nested, module-boundary-reuse,
+       delta-covers-all-owners]
