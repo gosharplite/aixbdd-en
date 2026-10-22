@@ -1,0 +1,43 @@
+#!/bin/sh
+# Classify what currently sits at a hook path. The single definition of "ours", used by
+# both `make install-hooks` and `make uninstall-hooks` so the two can never disagree.
+#
+# usage: classify-hook <hook-path>
+#
+# Prints exactly one word:
+#   absent          nothing there
+#   legacy          a symlink into scripts/hooks/<...> — ours, from the pre-stub design
+#   managed         our stub at the expected version
+#   stale-managed   our stub, but an older version (a newer one is available)
+#   foreign-symlink a symlink we do not own
+#   foreign-file    a regular file we do not own
+#
+# Identity is decided by the target's *tail* and by content, NOT by absolute path. A
+# moved or renamed clone, a linked git worktree (whose shared .git/hooks records the main
+# worktree's path) and macOS logical-vs-physical paths all make a path comparison
+# misclassify the repository's own hook as foreign.
+
+hook=$1
+marker='^# aixbdd-en-managed-hook'
+expected_version='2'
+
+if [ -L "$hook" ]; then
+    target=$(readlink "$hook" 2>/dev/null || echo '')
+    case "$target" in
+        */scripts/hooks/pre-commit | */scripts/hooks/pre-commit-stub) echo legacy ;;
+        *) echo foreign-symlink ;;
+    esac
+elif [ -e "$hook" ]; then
+    if grep -q "$marker" "$hook" 2>/dev/null; then
+        version=$(sed -n 's/^# aixbdd-en-managed-hook v\{0,1\}\([0-9][0-9]*\).*/\1/p' "$hook" 2>/dev/null | head -n 1)
+        if [ "${version:-0}" = "$expected_version" ]; then
+            echo managed
+        else
+            echo stale-managed
+        fi
+    else
+        echo foreign-file
+    fi
+else
+    echo absent
+fi

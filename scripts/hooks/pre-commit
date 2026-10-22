@@ -48,6 +48,19 @@ if ! git checkout-index -a --prefix="$snapshot"/ 2>/dev/null; then
     not_gated
 fi
 
+# The installed stub is a frozen copy, so a newer tracked stub reaches no existing clone.
+# Compare its version marker with the tracked one and say so — at the next commit, at no
+# cost to the stub's branch-independence.
+installed_stub=$(git rev-parse --git-path hooks)/pre-commit
+expected_version=$(sed -n 's/^# aixbdd-en-managed-hook v\([0-9][0-9]*\).*/\1/p' \
+    "$(dirname "$0")/pre-commit-stub" 2>/dev/null | head -n 1)
+installed_version=$(sed -n 's/^# aixbdd-en-managed-hook v\([0-9][0-9]*\).*/\1/p' \
+    "$installed_stub" 2>/dev/null | head -n 1)
+if [ -n "$expected_version" ] && [ "${installed_version:-0}" != "$expected_version" ]; then
+    echo "pre-commit: the installed hook stub is version ${installed_version:-0}, " \
+        "but the tracked one is $expected_version — run 'make install-hooks' to refresh it." >&2
+fi
+
 echo "pre-commit: running the invariant gate against the staged index…" >&2
 
 status=0

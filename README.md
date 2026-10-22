@@ -205,8 +205,17 @@ Three design points worth knowing:
   because silent ungating is exactly what the gate exists to prevent.
 - **Neither `core.hooksPath` nor a foreign hook is touched.** `hooksPath` *replaces* git's
   hook directory, disabling every other hook you have; the stub adds one file instead. It
-  refuses to overwrite an existing `pre-commit`, and `make uninstall-hooks` removes only a
-  hook carrying its own marker line, leaving anything else intact.
+  refuses to overwrite a hook it does not own, and `make uninstall-hooks` removes only what
+  it created — a stub carrying its own marker line, or the pre-stub symlink it recognises
+  as its own. Anything else is left alone.
+- **What "its own" means is defined once.** `scripts/hooks/classify-hook` decides, and both
+  recipes call it, so install and uninstall can never disagree. Identity is by the link
+  target's *tail* and by file content, not by absolute path — a moved clone, a linked
+  `git worktree` and macOS logical-vs-physical paths all make a path comparison misclassify
+  the repository's own hook as foreign.
+- **Install swaps atomically.** The new stub is copied to `pre-commit.tmp` and then moved
+  over the old one, so a failed copy leaves the working hook in place rather than removing
+  it first.
 
 The hook is **git-native rather than forge-specific**: a file in `.git/hooks/` works
 identically on any remote or none, needs no network, and survives a move away from any
@@ -242,6 +251,13 @@ Supporting files:
   stale, so an exemption cannot silently widen.
 - `scripts/check_dsl_default_params.py` — executes `STANDARDS.md` §4.3 against the example tree's
   `Default Params` cells. Seeded from #19 and the seed for #24 item 5.
+- `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),
+  `pre-commit-stub` (installed into `.git/hooks`, branch-independent, fails closed) and
+  `classify-hook` (the single definition of which hook is ours).
+- `scripts/test_hooks.py` — the hook lifecycle as tests: install, clean commit, staged and
+  partial-staged violations, a branch without the gate script, a moved clone, a failed
+  upgrade, uninstall, foreign hooks and a stale stub. Every one of these was a defect found
+  by review or by probing, so they belong in `make test` rather than in a PR transcript.
 - `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py` — prove each check
   against **its own historical escape** rather than only against a clean tree.
 

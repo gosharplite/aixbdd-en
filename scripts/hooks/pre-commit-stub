@@ -1,5 +1,5 @@
 #!/bin/sh
-# aixbdd-en-managed-hook
+# aixbdd-en-managed-hook v2
 #
 # A STUB, installed into .git/hooks/pre-commit by `make install-hooks` and removed by
 # `make uninstall-hooks`. It is deliberately a real file rather than a symlink into the
@@ -10,8 +10,8 @@
 # This stub always exists, and it FAILS CLOSED when the real script is missing, because
 # silent ungating is the thing the gate exists to prevent.
 #
-# The marker line above identifies this file as ours, so uninstall can remove only what
-# install created.
+# The versioned marker line above identifies this file as ours and lets the gate script
+# notice when an installed copy is older than the tracked one.
 
 set -u
 
@@ -23,15 +23,17 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || {
 target="$root/scripts/hooks/pre-commit"
 
 if [ ! -x "$target" ]; then
-    cat >&2 <<EOF
-pre-commit: THE GATE DID NOT RUN — this commit is ungated.
-
-  expected: $target
-  missing or not executable, most likely because the current branch predates it.
-
-Rerun \`make install-hooks\` on a branch that carries it, or commit with
-\`git commit --no-verify\` to skip the gate deliberately.
-EOF
+    printf '%s\n' \
+        "pre-commit: THE GATE DID NOT RUN — this commit is ungated." \
+        "" \
+        "  expected: $target" \
+        "  missing or not executable, most likely because the current branch predates it." \
+        "" \
+        "The hook itself is installed and is not the problem, so reinstalling it would change" \
+        "nothing. To commit on this branch either:" \
+        "" \
+        "  git rebase <branch-with-the-gate>    # bring the gate script onto this branch" \
+        "  git commit --no-verify               # skip the gate deliberately" >&2
     exit 1
 fi
 
