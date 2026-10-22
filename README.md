@@ -77,8 +77,9 @@ When resolving architect or peer review findings on a pull request, modifying fi
 2. **Log changes in `truth-delta.md`**: Record any changes made to `specs/truth/**` in the plan's `specs/plans/NNN-<slug>/truth-delta.md` (updating the corresponding truth owner's section with `MODIFY`, `ADD`, or `DELETE` and citing the review finding as the reason).
 3. **Audit DSL changes**: If any feature or `dsl.md` files were modified, run the topology audit script to verify syntax and cross-references:
    ```bash
-   python3 skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root specs/truth/features
+   uv run skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root specs/truth/features
    ```
+   Pass either the shared features root or a single interface root (e.g. `specs/truth/features/backend`); with the shared root every interface subdirectory is audited in turn. Use `uv run` so the script's declared Python version is honoured.
 4. **Code-only refactorings**: Internal refactorings, optimizations, or renames that do not alter external behavior or contracts do not touch `specs/` — update the production code and tests directly.
 
 ## Notes

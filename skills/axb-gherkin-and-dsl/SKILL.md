@@ -29,33 +29,33 @@ Converge Gherkin and DSL so that two things hold at the same time:
 
 ## Phase 2 -- Inventory test cases and coverage gaps
 
-1. READ Read the "Coverage & Implementability Checks" and "Gherkin Sentence Standards" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "7. Coverage & Implementability Checks" and "1. Gherkin Language Boundaries & Sentence Convergence" sections in [STANDARDS.md](STANDARDS.md).
 2. THINK Compare each test case's Arrange / Act / expected output / must-remain-invariant / not-verified-by-this-case one by one, judging whether the current Gherkin and DSL fully cover them; if steps exist but semantics have been diluted, that also counts as a gap.
 3. WRITE List the gaps: missing sentences, over-fat sentences, misplaced DataTable / Background / Rule boundaries, insufficient Then strictness, or technical jargon leaking into Gherkin.
 
 ## Phase 3 -- Converge Gherkin sentences
 
-1. READ Read the "Gherkin Language Boundaries & Sentence Convergence" and "In-Sentence Parameters & DataTable Format" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "1. Gherkin Language Boundaries & Sentence Convergence" and "3. In-Sentence Parameters & DataTable Format" sections in [STANDARDS.md](STANDARDS.md).
 2. THINK Converge the shared sentences of `Given` / `When` / `Then`: sentences with identical semantics must be shared; if a sentence is too fat, split it into more core, reusable steps; prefer DataTables only for multi-row data or single sentences that actually summarize more than 3 fields.
 3. WRITE Modify the Gherkin: add missing Given / When / Then, add business-relevant default-value comments, adjust DataTables, and remove obsolete carry-over comments and technical details.
 
 ## Phase 4 -- Converge the DSL vocabulary
 
-1. READ Read the "DSL Required Fields", "Backend Implementation Semantics", and "Frontend Implementation Semantics" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "4. DSL Required Fields", "5. Backend DSL Implementation Semantics", and "6. Frontend DSL Implementation Semantics" sections in [STANDARDS.md](STANDARDS.md).
 2. READ If you need to create or move DSL rows, or determine whether a sentence should be carried by the module or the interface root, read `rules/interface-module-and-dsl-unique-ownership-criteria.md` on demand to confirm the complete contract and unique-ownership criteria.
 3. THINK For each Gherkin sentence, judge whether the existing row, DataTable fields, default parameters, and implementation semantics are sufficient, and decide the unique authoritative location per the loaded criteria.
 4. WRITE Create or update rows in the unique authoritative DSL file, ensuring the sentence, parameters, DataTable fields, defaults, and implementation semantics can directly support step definitions.
 
 ## Phase 5 -- Perform structure optimization
 
-1. READ Read the "Feature / Rule / Example Structure" and "Background / Scenario Outline / DataTable Decisions" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "2. Feature / Rule / Example Structure" and "3. In-Sentence Parameters & DataTable Format" sections in [STANDARDS.md](STANDARDS.md).
 2. THINK Split feature files by functional aspect, deciding whether to extract `Rule`, `Background`, `Scenario Outline`; `Rule` must be atomic, `Example` should describe data scenarios rather than repeating the rule's name.
 3. WRITE Refactor the feature files: split files, extract Rules, extract Backgrounds, introduce Scenario Outline where needed, and remove the obsolete single all-in-one master file.
 
 ## Phase 6 -- Check implementability
 
 1. READ Re-read the modified feature files, the same-module DSL, and the relevant interface root shared DSL.
-2. DELEGATE Run `uv run skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root <features-root>` to mechanically check the topology, DSL row duplicates, and unique matching of every step; keep the output for later judgment.
+2. DELEGATE Run `uv run skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root <features-root>` to mechanically check the topology, DSL row duplicates, and unique matching of every step; keep the output for later judgment. `<features-root>` may be one interface root (`specs/truth/features/backend`, `.../frontend`, `.../cli`) or the shared parent (`specs/truth/features`), in which case every interface subdirectory is audited in turn and each message is prefixed with its interface name.
 3. THINK Combine the audit results with the loaded standards to judge whether shared contracts are truly semantically consistent, whether every test case is fully covered, whether the Gherkin remains in business language, whether the DSL is sufficient for direct implementation, and whether Then goes beyond surface output.
 4. WRITE Report the mechanical audit results, semantic and structure decisions, the sentences still needing convergence, and the scope that can be handed directly to step definition / test implementation.
 
