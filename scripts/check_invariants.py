@@ -562,7 +562,10 @@ def check_section_references(
                     continue
                 result.fail(
                     "section-references",
-                    f"`§{section}` does not name a section of `skills/axb-gherkin-and-dsl/STANDARDS.md`",
+                    f"`§{section}` does not name a section of `skills/axb-gherkin-and-dsl/STANDARDS.md`; "
+                    "if it refers to something else (a licence, another document), add a "
+                    "`section-references` allowlist entry for the line, so the exemption is "
+                    "staleness-checked",
                     path,
                     number,
                 )

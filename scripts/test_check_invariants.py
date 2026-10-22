@@ -367,6 +367,9 @@ class SkillReferenceTests(Fixture):
         result = self.run_check({"names"})
         self.assertEqual(len(result.findings), 1, result.findings)
         self.assertIn("/ws", result.findings[0].message)
+        # And the refusal teaches the route, at the point of failure rather than in a doc.
+        self.assertIn("allowlist", result.findings[0].message)
+        self.assertIn("staleness-checked", result.findings[0].message)
 
     def test_real_skill_passes(self) -> None:
         (self.root / "skills" / "axb-real").mkdir(parents=True)
@@ -543,6 +546,22 @@ class SectionReferenceTests(Fixture):
         standards.write_text(MINIMAL_STANDARDS + "\n§4 and §5.2 are its own sections.\n", encoding="utf-8")
         result = self.run_check({"names"})
         self.assertEqual(result.findings, [], result.findings)
+
+    def test_the_refusal_teaches_the_exemption_route(self) -> None:
+        """The failure text is where someone under pressure to pass the gate actually reads.
+
+        Invariant 7's message named the allowlist from the start; invariant 8's only said
+        "does not name a section", so the discipline was visible in one lane and not the
+        other. Both must point at the staleness-checked route, because that is the moment
+        an exemption gets invented in code otherwise.
+        """
+        self.write("skills/x/SKILL.md", "See §9.9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        message = result.findings[0].message
+        self.assertIn("section-references", message)
+        self.assertIn("allowlist", message)
+        self.assertIn("staleness-checked", message)
 
     def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
         # `§11` is deliberately a number `MINIMAL_STANDARDS` does not declare. The first
