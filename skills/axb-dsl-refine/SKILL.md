@@ -24,7 +24,7 @@ disable-model-invocation: true
 
 ## Phase 3 -- Update interface feature truth
 
-1. READ Read `../axb-gherkin-and-dsl/SKILL.md` and `../axb-gherkin-and-dsl/STANDARDS.md` to take over their mounted Gherkin, DSL, and unique-ownership criteria.
+1. READ Read `../axb-gherkin-and-dsl/SKILL.md` and `../axb-gherkin-and-dsl/STANDARDS.md` to take over their mounted Gherkin, DSL, and unique-ownership criteria. For the DSL implementation semantics of each interface kind this round touches, read the matching STANDARDS.md section: §5 backend, §6 frontend, §7 CLI. A CLI interface has no equivalent elsewhere, so §7 is the only authoritative DSL vocabulary for it — do not improvise one. Take §7.1 and §7.2's own enumeration as the complete label set rather than a list restated here, since a paraphrase would silently drop labels.
 2. WRITE Create, modify, move, or delete the affected interface features and DSL rows at their unique authoritative locations per the loaded rules.
 3. DELEGATE Call `/axb-gherkin-and-dsl` to check the affected interfaces, obtaining topology mechanical audit, DSL unique ownership, acceptance coverage, and Gherkin structure results; fix immediately if non-conforming.
 4. THINK Organize the feature/dsl truth changes into semantic-unit-level ADD / MODIFY / DELETE / NOOP rows.

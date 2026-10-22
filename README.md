@@ -125,12 +125,20 @@ All initial files were translated from aixbdd-tmg's original Traditional Chinese
 - The **default project language is flipped to English** (STANDARDS.md "Project Language" section and
   the §2/§3 defaults); it remains project-declarable, so projects may still declare any language.
 - **Fixed DSL contract tokens are English**: `DSL Sentence`, `Gherkin Params`, `Data Table Params`,
-  `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, and the §5.1/§5.2
-  sub-labels (`How`, `State landing`, `Write-back`, `No-check`/`Must-check`, `Presented Result`,
-  `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`, `Should Not Happen`). They were
-  Chinese in upstream AIxBDD and are renamed in this repo; the audit script accepts both the English
-  header `DSL Sentence` and the legacy Chinese header `DSL 句型`, so upstream-era DSL files still audit
-  cleanly. These tokens remain fixed — do not translate them per project language. The Chinese Gherkin
+  `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, the §5.1 Given / When
+  sub-labels (`How`, `State landing`, `Write-back`, `No-check`), and the §5.2 Then channels
+  (`Presented Result`, `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`,
+  `Should Not Happen`). The examples additionally use a `Must-check` Then label that `STANDARDS.md`
+  §5.2 **does not yet define** — a known gap tracked as #5, tagged in place in §5.2.
+- **The CLI interface kind has its own fixed vocabulary**, defined in `STANDARDS.md` §7.1 and §7.2.
+  Those two subsections are the **single enumeration** — this README deliberately does not restate the
+  labels, because three partial lists of one vocabulary is how `{{PLAN_PACKAGE}}` drifted before #11
+  settled it. Read §7 for the set; do not maintain a copy here.
+- The §4/§5 tokens above **were Chinese in upstream AIxBDD and are renamed in this repo**; the audit
+  script accepts both the English header `DSL Sentence` and the legacy Chinese header `DSL 句型`, so
+  upstream-era DSL files still audit cleanly. The §7 CLI vocabulary is **not** a translation — it is
+  new in this repository and has no upstream counterpart.
+- These tokens remain fixed — do not translate them per project language. The Chinese Gherkin
   keywords in the audit script's `STEP_RE` are kept as parser locale support (Gherkin sentence language
   is project-declarable).
 

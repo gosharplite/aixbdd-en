@@ -29,7 +29,7 @@ Converge Gherkin and DSL so that two things hold at the same time:
 
 ## Phase 2 -- Inventory test cases and coverage gaps
 
-1. READ Read the "7. Coverage & Implementability Checks" and "1. Gherkin Language Boundaries & Sentence Convergence" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "8. Coverage & Implementability Checks" and "1. Gherkin Language Boundaries & Sentence Convergence" sections in [STANDARDS.md](STANDARDS.md).
 2. THINK Compare each test case's Arrange / Act / expected output / must-remain-invariant / not-verified-by-this-case one by one, judging whether the current Gherkin and DSL fully cover them; if steps exist but semantics have been diluted, that also counts as a gap.
 3. WRITE List the gaps: missing sentences, over-fat sentences, misplaced DataTable / Background / Rule boundaries, insufficient Then strictness, or technical jargon leaking into Gherkin.
 
@@ -41,7 +41,7 @@ Converge Gherkin and DSL so that two things hold at the same time:
 
 ## Phase 4 -- Converge the DSL vocabulary
 
-1. READ Read the "4. DSL Required Fields", "5. Backend DSL Implementation Semantics", and "6. Frontend DSL Implementation Semantics" sections in [STANDARDS.md](STANDARDS.md).
+1. READ Read the "4. DSL Required Fields" section plus the implementation-semantics section for every interface kind this round touches: "5. Backend DSL Implementation Semantics", "6. Frontend DSL Implementation Semantics", and "7. CLI DSL Implementation Semantics".
 2. READ If you need to create or move DSL rows, or determine whether a sentence should be carried by the module or the interface root, read `rules/interface-module-and-dsl-unique-ownership-criteria.md` on demand to confirm the complete contract and unique-ownership criteria.
 3. THINK For each Gherkin sentence, judge whether the existing row, DataTable fields, default parameters, and implementation semantics are sufficient, and decide the unique authoritative location per the loaded criteria.
 4. WRITE Create or update rows in the unique authoritative DSL file, ensuring the sentence, parameters, DataTable fields, defaults, and implementation semantics can directly support step definitions.
