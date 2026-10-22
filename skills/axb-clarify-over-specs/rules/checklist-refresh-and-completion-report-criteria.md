@@ -87,7 +87,7 @@ Judgment:
 
 ```md
 Completion report:
-- Target spec: `specs/001-online-pvp-1a2b/spec.md`
+- Target spec: `specs/plans/001-online-pvp-1a2b/spec.md`
 - Entered `/axb-clarify`: yes, 2 questions
 - Updated sections: User Story 3, Edge Cases, Success Criteria
 - checklist: 12/16 -> 14/16

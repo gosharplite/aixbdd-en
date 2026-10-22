@@ -5,7 +5,7 @@
 ### Document Structure (this feature)
 
 ```text
-specs/001-course-subscription-checkout/
+specs/plans/001-course-subscription-checkout/
 ├── plan.md
 ├── research.md
 ├── data-model.md

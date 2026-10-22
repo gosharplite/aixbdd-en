@@ -2,9 +2,9 @@
 
 **Created Date**: 2026-07-22
 
-**Feature Directory**: `specs/001-online-pvp-1a2b`
+**Feature Directory**: `specs/plans/001-online-pvp-1a2b`
 
-**Spec Path**: `specs/001-online-pvp-1a2b/spec.md`
+**Spec Path**: `specs/plans/001-online-pvp-1a2b/spec.md`
 
 ## How to Use
 
