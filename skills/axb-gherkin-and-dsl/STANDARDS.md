@@ -98,9 +98,34 @@ kind's header, and the suffix is what makes that reference unambiguous.
 
 ### 4.3 Default Parameter Column
 
-- Keep only the defaults where "if not stated clearly, the AI can easily guess wrong"
-- Do not stuff all internal implementation decisions in here
-- Example: `invalid match code = "12"` is a good default; `wait snapshot count = 1` should not appear in Gherkin, but may live in the frontend DSL
+**What this column is.** A `Default Params` entry records a value the **step definition** binds when
+the Gherkin sentence does not supply it. The column exists so a reader does not have to guess what a
+step assumes — not to list implementation detail. Keep only the values where, if unstated, the AI
+would easily guess wrong.
+
+**An entry is one of two kinds, and it must be clear which:**
+
+- **A constant** — a fixed fixture value the step always uses, e.g. `discount-amount` is an integer
+  constant 100. Write the value, not the word "default": a constant is not a default, and calling it
+  one suggests an override mechanism that does not exist.
+- **A step-context binding** — the name of something the step looks up from the test's running context,
+  e.g. `target-cart` is the cart of the player this scenario is acting as. Say *what it resolves to and
+  from what*, because the name alone does not.
+
+**Entries are not scenario-overridable.** A scenario changes a default only by using a sentence whose
+Gherkin parameters carry a placeholder for that value (§4.1). Writing "defaults to X" where X has no
+placeholder describes a knob no scenario can turn. If a value genuinely should vary per scenario, it
+needs a Gherkin parameter, not a default.
+
+**A context binding must resolve from state established before this step runs.** A binding that refers
+to state *this step itself produces* is circular and non-conforming: the cart-creating step cannot
+default its owner to "the current cart owner", because the cart does not exist until the step runs.
+State the binding in terms of what the scenario established earlier — e.g. the scenario's only player,
+with a rule for what happens when more than one player appears.
+
+**Do not put internal implementation decisions here.** `wait snapshot count = 1` is a frontend
+implementation detail, not a Gherkin-readable default; `invalid match code = "12"` is, because it
+changes what the step means.
 
 ## 5. Backend DSL Implementation Semantics
 
