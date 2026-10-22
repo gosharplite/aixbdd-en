@@ -12,9 +12,10 @@ meaningless there. The user-facing skill invocations (e.g. the DSL topology audi
 `axb-gherkin-and-dsl/SKILL.md` Phase 6 tells an agent to run inside a user's project)
 are authoritative in their own skill and are deliberately not restated here.
 
-Invariants 1-4 fail; 5-6 report candidates and exit 0 unless an unambiguous violation is
-found. A check that fails on candidates it cannot triage gets deleted, so the triage
-criterion is written into each candidate's output instead.
+Invariants 1-4 **fail** on violation. Invariants 5-6 **report candidates only** and never
+fail: both need human triage (a citation may record provenance or be load-bearing; a
+delivery claim may name a real check or none), and a check that fails on candidates it
+cannot triage gets deleted. The triage criterion is printed with each candidate instead.
 
 See issue #12 for why each invariant exists and which PR's defect it would have caught.
 """
@@ -30,6 +31,10 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
+CHECKED_EXTENSIONS = (".md", ".py", ".yaml", ".html", ".txt")
+CHECKED_ROOTS = ("skills", "domain-model")
+EXTRA_FILES = ("README.md",)
+
 
 def registry_path(root: Path) -> Path:
     """The registry lives inside the repository it describes, so a fixture carries its own."""
@@ -38,10 +43,6 @@ def registry_path(root: Path) -> Path:
 
 def allowlist_path(root: Path) -> Path:
     return root / "scripts" / "invariant_allowlist.json"
-
-CHECKED_EXTENSIONS = (".md", ".py", ".yaml", ".html", ".txt")
-CHECKED_ROOTS = ("skills", "domain-model")
-EXTRA_FILES = ("README.md",)
 
 
 @dataclass
@@ -69,16 +70,18 @@ class Finding:
 
 @dataclass
 class Result:
+    root: Path | None = None
     findings: list[Finding] = field(default_factory=list)
     candidates: list[Finding] = field(default_factory=list)
-
-    root: Path | None = None
 
     def fail(self, invariant: str, message: str, path: Path | None = None, line: int | None = None) -> None:
         self.findings.append(Finding(invariant, message, path, line, self.root))
 
     def report(self, invariant: str, message: str, path: Path | None = None, line: int | None = None) -> None:
         self.candidates.append(Finding(invariant, message, path, line, self.root))
+
+
+Source = tuple[Path, list[str]]
 
 
 def iter_text_files(root: Path) -> list[Path]:
@@ -96,6 +99,20 @@ def iter_text_files(root: Path) -> list[Path]:
         if path.is_file():
             paths.append(path)
     return paths
+
+
+def load_sources(root: Path) -> list[Source]:
+    """Read every checked file once; every check reuses this."""
+    sources: list[Source] = []
+    skip = {registry_path(root).resolve(), allowlist_path(root).resolve()}
+    for path in iter_text_files(root):
+        if path.resolve() in skip:
+            continue
+        try:
+            sources.append((path, path.read_text(encoding="utf-8").splitlines()))
+        except (OSError, UnicodeError):
+            continue
+    return sources
 
 
 def load_json(path: Path) -> dict:
@@ -125,6 +142,24 @@ def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, roo
     return False
 
 
+def fenced_line_mask(lines: list[str]) -> list[bool]:
+    """Mark lines inside (or delimiting) a fenced code block.
+
+    Markdown-about-markdown is this repository's normal mode, so a defining section that
+    gains a fenced example containing a `## ...` line must not be truncated by it.
+    """
+    mask: list[bool] = []
+    inside = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            mask.append(True)
+            inside = not inside
+            continue
+        mask.append(inside)
+    return mask
+
+
 # --------------------------------------------------------------------------------------
 # Invariants 1-3: spec path roots
 # --------------------------------------------------------------------------------------
@@ -132,14 +167,24 @@ def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, roo
 SPECS_REF_RE = re.compile(r"specs/(\{\{|[0-9]{3}-|[a-zA-Z])")
 ALLOWED_SPECS_ROOT_RE = re.compile(r"specs/(plans|truth)(?![A-Za-z0-9_-])")
 
+# Characters that may bound a path token.
+PATH_BOUNDARY = set("`'\"()[]<>,;:| \t")
 
-def check_specs_roots(result: Result, allowlist: dict, root: Path) -> None:
+
+def path_token_at(text: str, index: int) -> str:
+    """The contiguous whitespace/punctuation-delimited token containing `index`."""
+    start = index
+    while start > 0 and text[start - 1] not in PATH_BOUNDARY:
+        start -= 1
+    end = index
+    while end < len(text) and text[end] not in PATH_BOUNDARY:
+        end += 1
+    return text[start:end]
+
+
+def check_specs_roots(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
     """Invariant 1: every `specs/<segment>` reference resolves to plans/ or truth/."""
-    for path in iter_text_files(root):
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
-            continue
+    for path, lines in sources:
         for number, line in enumerate(lines, start=1):
             for match in SPECS_REF_RE.finditer(line):
                 tail = line[match.start():]
@@ -149,8 +194,8 @@ def check_specs_roots(result: Result, allowlist: dict, root: Path) -> None:
                     continue
                 result.fail(
                     "specs-roots",
-                    f"`{tail.split()[0].rstrip('`')}` — a `specs/` root other than `plans` or `truth`; "
-                    "write `specs/plans/...` or `specs/truth/...`",
+                    f"`{path_token_at(line, match.start())}` — a `specs/` root other than `plans` or "
+                    "`truth`; write `specs/plans/...` or `specs/truth/...`",
                     path,
                     number,
                 )
@@ -158,35 +203,41 @@ def check_specs_roots(result: Result, allowlist: dict, root: Path) -> None:
 
 TRUTH_ARTIFACT_RE = re.compile(r"(?<![A-Za-z])contracts/|(?<![A-Za-z])data-model(?![a-z-])")
 
-# Shapes that are *not* a reference to a truth artifact living outside specs/truth/.
-TRUTH_ARTIFACT_EXEMPT_SUBSTRINGS = (
-    "specs/truth/",
-    "constitution",
-    "templates/data-model",
-    "skills/axb-data-plan",
-)
 
+def check_truth_paths(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
+    """Invariant 2: no contracts/ or data-model reference outside specs/truth/.
 
-def check_truth_paths(result: Result, allowlist: dict, root: Path) -> None:
-    """Invariant 2: no contracts/ or data-model reference outside specs/truth/."""
-    for path in iter_text_files(root):
-        if path in (registry_path(root), allowlist_path(root)):
-            continue
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
-            continue
+    The exemption is a property of the *path token*, not of a character radius: a
+    conforming `specs/truth/<anything>/contracts/openapi.yaml` must pass however deeply
+    nested it is.
+    """
+    for path, lines in sources:
         for number, line in enumerate(lines, start=1):
             for match in TRUTH_ARTIFACT_RE.finditer(line):
-                start = max(0, match.start() - 40)
-                window = line[start: match.end() + 40]
-                if any(needle in window for needle in TRUTH_ARTIFACT_EXEMPT_SUBSTRINGS):
+                token = path_token_at(line, match.start())
+                # A conforming truth path passes however deeply nested it is: the exemption
+                # is a property of the token, not of a character radius.
+                if token.startswith(("specs/truth/", "truth/")):
+                    continue
+                # A skill's own files (`skills/axb-data-plan/data-model.md`, a skill's
+                # `templates/` dir) are not truth artifacts.
+                if token.startswith("skills/") or token.startswith("templates/") or "/templates/" in token:
+                    continue
+                if "constitution" in token:
+                    continue
+                # An *abbreviation* with no file extension ("contracts/data",
+                # "data-model truth") is contextualised when the truth root appears on the
+                # same line. A token naming an actual artifact — one with an extension —
+                # is always flagged, so this exemption cannot swallow a real violation that
+                # happens to share a line with a conforming path.
+                looks_like_artifact = bool(re.search(r"\.[A-Za-z][A-Za-z0-9]{1,9}$", token))
+                if not looks_like_artifact and "specs/truth" in line:
                     continue
                 if allowlisted(allowlist, "truth-paths", path, line, root):
                     continue
                 result.fail(
                     "truth-paths",
-                    f"`{match.group(0)}…` reads as a package-local truth artifact; truth lives under "
+                    f"`{token}` reads as a package-local truth artifact; truth lives under "
                     "`specs/truth/contracts/**` and `specs/truth/data/**`",
                     path,
                     number,
@@ -196,27 +247,39 @@ def check_truth_paths(result: Result, allowlist: dict, root: Path) -> None:
 PLAN_PACKAGE_RE = re.compile(r"\{\{PLAN_PACKAGE\}\}")
 
 
-def check_plan_package_prefix(result: Result, allowlist: dict, root: Path) -> None:
-    """Invariant 3: every {{PLAN_PACKAGE}} is preceded by a literal specs/plans/."""
-    for path in iter_text_files(root):
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
-            continue
+def check_plan_package_prefix(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
+    """Invariant 3: every {{PLAN_PACKAGE}} is directly preceded by specs/plans/.
+
+    Adjacency is required — `specs/plans/ {{PLAN_PACKAGE}}` renders no valid path — and
+    the prefix must be bounded like a path, so `foo-specs/plans/` does not qualify.
+    """
+    for path, lines in sources:
         for number, line in enumerate(lines, start=1):
             for match in PLAN_PACKAGE_RE.finditer(line):
-                prefix = line[: match.start()]
-                if prefix.rstrip().endswith("specs/plans/"):
+                start = match.start()
+                prefix = "specs/plans/"
+                if not line[:start].endswith(prefix):
+                    if allowlisted(allowlist, "plan-package-prefix", path, line, root):
+                        continue
+                    result.fail(
+                        "plan-package-prefix",
+                        "the plan-package placeholder must be *directly* preceded by `specs/plans/` "
+                        "(the placeholder's value is a bare `NNN-<slug>`)",
+                        path,
+                        number,
+                    )
                     continue
-                if allowlisted(allowlist, "plan-package-prefix", path, line, root):
-                    continue
-                result.fail(
-                    "plan-package-prefix",
-                    "`{{PLAN_PACKAGE}}` must be preceded by a literal `specs/plans/` "
-                    "(the placeholder's value is a bare `NNN-<slug>`)",
-                    path,
-                    number,
-                )
+                before = start - len(prefix)
+                if before > 0 and line[before - 1] not in PATH_BOUNDARY:
+                    if allowlisted(allowlist, "plan-package-prefix", path, line, root):
+                        continue
+                    result.fail(
+                        "plan-package-prefix",
+                        "`specs/plans/` before the plan-package placeholder must start a path, not "
+                        "follow other path characters",
+                        path,
+                        number,
+                    )
 
 
 # --------------------------------------------------------------------------------------
@@ -227,11 +290,18 @@ HEADING_RE = re.compile(r"^(#{2,3})\s+(.+?)\s*$")
 
 
 def section_text(document: str, heading_prefix: str) -> str | None:
-    """Return the body of the section whose heading starts with `heading_prefix`."""
+    """Return the body of the section whose heading starts with `heading_prefix`.
+
+    Fenced blocks are skipped for heading detection, so an example containing a `## ...`
+    line cannot truncate the section that defines the tokens.
+    """
     lines = document.splitlines()
+    fenced = fenced_line_mask(lines)
     start = None
     start_level = None
     for index, line in enumerate(lines):
+        if fenced[index]:
+            continue
         match = HEADING_RE.match(line)
         if not match:
             continue
@@ -247,36 +317,29 @@ def section_text(document: str, heading_prefix: str) -> str | None:
     return "\n".join(lines[start:])
 
 
-VARIANT_PROBE_EXTENSIONS = (".md",)
-VARIANT_SKIP_TOKENS = {
-    # Single ordinary words whose lowercase form is legitimate prose elsewhere
-    # ("stdout", "landing", "how", "invocation"). Spelling drift on these is not
-    # distinguishable from normal English, so they are checked for presence only.
-    "Stdout",
-    "Stderr",
-    "How",
-    "Landing",
-    "Invocation",
-}
-
-
 def token_variants(token: str) -> set[str]:
-    """Spellings of `token` that would be drift: case, hyphen and spacing changes."""
+    """Spellings of `token` that would be drift: case, hyphen and spacing changes.
+
+    Sentence case is included because it is the *likeliest* drift in this repo — the
+    canonical vocabulary itself mixes conventions (`Must-check`, `State landing` beside
+    `Exit Code`, `Should Not Happen`), so a writer applying house sentence-case style to a
+    title-case token reproduces exactly the spelling drift this invariant exists to catch.
+    """
     words = re.split(r"[-\s]+", token)
     if len(words) < 2:
         return set()
     variants: set[str] = set()
     for joiner in (" ", "-", ""):
-        for transform in (str.lower, str.upper, str.title):
-            candidates = transform(joiner.join(words))
-            if transform is str.title:
-                candidates = joiner.join(word.capitalize() for word in words)
-            if candidates != token:
-                variants.add(candidates)
+        variants.add(joiner.join(word.lower() for word in words))
+        variants.add(joiner.join(word.upper() for word in words))
+        variants.add(joiner.join(word.capitalize() for word in words))
+        # Sentence case: first word capitalized, the rest lowered.
+        variants.add(joiner.join([words[0].capitalize()] + [word.lower() for word in words[1:]]))
+    variants.discard(token)
     return variants
 
 
-def check_token_registry(result: Result, allowlist: dict, root: Path) -> None:
+def check_token_registry(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
     """Invariant 4: registry matches the definitions, and naming surfaces use it exactly."""
     registry_file = registry_path(root)
     if not registry_file.is_file():
@@ -286,7 +349,10 @@ def check_token_registry(result: Result, allowlist: dict, root: Path) -> None:
     registry = load_json(registry_file)
     defining_file = root / registry["definingFile"]
     if not defining_file.is_file():
-        result.fail("token-registry", f"registry names a defining file that does not exist: {registry['definingFile']}")
+        result.fail(
+            "token-registry",
+            f"registry names a defining file that does not exist: {registry['definingFile']}",
+        )
         return
 
     document = defining_file.read_text(encoding="utf-8")
@@ -312,58 +378,54 @@ def check_token_registry(result: Result, allowlist: dict, root: Path) -> None:
             )
 
     # Direction 2 — consistency: tokens named elsewhere use the canonical spelling.
+    #
+    # Only *backticked* spans are candidates: this repo writes contract tokens in backticks,
+    # so unbracketed "authoritative state" is ordinary English. Backticked paths are
+    # excluded too — `…verification-and-writeback-criteria.md` contains a token substring
+    # without naming a token.
+    #
+    # A span may *begin* with a drifted token followed by a delimiter (`:` or whitespace),
+    # because the natural quoted form of a DSL cell always carries content after the colon.
     variant_map: dict[str, str] = {}
     for token in tokens:
-        if token in VARIANT_SKIP_TOKENS:
-            continue
         for variant in token_variants(token):
             variant_map.setdefault(variant, token)
 
-    # Only *backticked* spans are candidates: this repo writes contract tokens in backticks,
-    # so an unbracketed "authoritative state" is ordinary English, not a token reference.
-    # Backticked file paths are excluded too — `…verification-and-writeback-criteria.md`
-    # contains a token substring without naming a token.
     if variant_map:
+        ordered = sorted(variant_map, key=len, reverse=True)
+        variant_pattern = re.compile(r"(" + "|".join(re.escape(v) for v in ordered) + r")(?=$|:)")
         backticked = re.compile(r"`([^`\n]+)`")
-        for path in iter_text_files(root):
-            if path.suffix not in VARIANT_PROBE_EXTENSIONS:
-                continue
-            if path == registry_path(root):
-                continue
-            try:
-                lines = path.read_text(encoding="utf-8").splitlines()
-            except (OSError, UnicodeError):
+        for path, lines in sources:
+            if path.suffix != ".md":
                 continue
             for number, line in enumerate(lines, start=1):
                 for span in backticked.finditer(line):
                     inner = span.group(1).strip()
-                    if "/" in inner or "." in inner or "_" in inner:
+                    if "/" in inner or inner.endswith((".md", ".py", ".yaml", ".json", ".html", ".txt")):
                         continue
-                    canonical = variant_map.get(inner)
-                    if canonical is None:
+                    match = variant_pattern.match(inner)
+                    if match is None:
                         continue
+                    canonical = variant_map[match.group(1)]
                     if allowlisted(allowlist, "token-registry", path, line, root):
                         continue
                     result.fail(
                         "token-registry",
-                        f"`{inner}` should be spelled `{canonical}` — a fixed contract token "
-                        "is not translatable or reformattable",
+                        f"`{inner}` should be spelled `{canonical}` — a fixed contract token is not "
+                        "translatable or reformattable",
                         path,
                         number,
                     )
 
 
 # --------------------------------------------------------------------------------------
-# Invariants 5-6: candidate reports (non-failing)
+# Invariants 5-6: candidate reports (never fail)
 # --------------------------------------------------------------------------------------
-
-NORMATIVE_ROOTS = ("skills",)
-NORMATIVE_FILENAME_ALLOW = ("SKILL.md", "STANDARDS.md")
 
 ISSUE_REF_RE = re.compile(r"#[0-9]+")
 
 
-def check_normative_refs(result: Result, root: Path) -> None:
+def check_normative_refs(result: Result, sources: list[Source]) -> None:
     """Invariant 5: no normative document depends on an artifact that does not exist yet.
 
     Reports every issue reference inside normative prose as a CANDIDATE. Triage:
@@ -371,15 +433,10 @@ def check_normative_refs(result: Result, root: Path) -> None:
     a reference a reader must *follow to comply* is the defect ("register it in the
     registry per #12"). Only the second is a violation.
     """
-    for path in iter_text_files(root):
+    for path, lines in sources:
         if path.suffix != ".md":
             continue
-        if not path.name.endswith(NORMATIVE_FILENAME_ALLOW):
-            if "rules" not in path.parts:
-                continue
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
+        if not (path.name == "SKILL.md" or path.name == "STANDARDS.md" or "rules" in path.parts):
             continue
         for number, line in enumerate(lines, start=1):
             if not ISSUE_REF_RE.search(line):
@@ -398,18 +455,14 @@ ENFORCEMENT_CLAIM_RE = re.compile(
 )
 
 
-def check_asserted_enforcement(result: Result, root: Path) -> None:
+def check_asserted_enforcement(result: Result, sources: list[Source]) -> None:
     """Invariant 6: every MUST asserting a delivery gate names the check that enforces it.
 
     Reports every such claim as a CANDIDATE. Triage: does the named check exist? If the
     text names no check and no tracker, the claim is intent stated as fact.
     """
-    for path in iter_text_files(root):
+    for path, lines in sources:
         if path.suffix != ".md":
-            continue
-        try:
-            lines = path.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
             continue
         for number, line in enumerate(lines, start=1):
             if not ENFORCEMENT_CLAIM_RE.search(line):
@@ -429,15 +482,16 @@ def check_asserted_enforcement(result: Result, root: Path) -> None:
 
 def run(root: Path, selected: set[str] | None = None) -> Result:
     allowlist = load_allowlist(root)
+    sources = load_sources(root)
     result = Result(root=root)
     checks = {
         "paths": lambda: (
-            check_specs_roots(result, allowlist, root),
-            check_truth_paths(result, allowlist, root),
-            check_plan_package_prefix(result, allowlist, root),
+            check_specs_roots(result, allowlist, root, sources),
+            check_truth_paths(result, allowlist, root, sources),
+            check_plan_package_prefix(result, allowlist, root, sources),
         ),
-        "tokens": lambda: check_token_registry(result, allowlist, root),
-        "refs": lambda: (check_normative_refs(result, root), check_asserted_enforcement(result, root)),
+        "tokens": lambda: check_token_registry(result, allowlist, root, sources),
+        "refs": lambda: (check_normative_refs(result, sources), check_asserted_enforcement(result, sources)),
     }
     for name, check in checks.items():
         if selected and name not in selected:

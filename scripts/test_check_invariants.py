@@ -46,6 +46,15 @@ MINIMAL_STANDARDS = """# Standards
 - `Re-read Confirmation`: still holds
 - `Cross-Perspective`: another player sees the same
 - `Should Not Happen`: must not be created
+
+## 7. CLI DSL Implementation Semantics
+
+### 7.2 Then Granularity
+
+- `Stdout`: this command's standard output
+- `Stderr`: this command's diagnostics
+- `Exit Code`: the numeric exit status
+- `Filesystem State`: files written or left untouched
 """
 
 MINIMAL_REGISTRY = {
@@ -65,6 +74,10 @@ MINIMAL_REGISTRY = {
         {"token": "Re-read Confirmation", "section": "5.2 Then Granularity", "kind": "then-channel"},
         {"token": "Cross-Perspective", "section": "5.2 Then Granularity", "kind": "then-channel"},
         {"token": "Should Not Happen", "section": "5.2 Then Granularity", "kind": "then-channel"},
+        {"token": "Stdout", "section": "7.2 Then Granularity", "kind": "then-channel"},
+        {"token": "Stderr", "section": "7.2 Then Granularity", "kind": "then-channel"},
+        {"token": "Exit Code", "section": "7.2 Then Granularity", "kind": "then-channel"},
+        {"token": "Filesystem State", "section": "7.2 Then Granularity", "kind": "then-channel"},
     ],
 }
 
@@ -152,6 +165,37 @@ class TruthPathTests(Fixture):
         result = self.run_check({"paths"})
         self.assertEqual(result.findings, [])
 
+    def test_deeply_nested_conforming_truth_path_passes(self) -> None:
+        # Regression: the exemption used to be a +/-40-character window, so a conforming
+        # path nested deeper than that was flagged. A checker that fails on correct content
+        # gets allowlisted into silence (review of #21, finding 2).
+        self.write(
+            "skills/x/rules/r.md",
+            "Reads `specs/truth/some/deeply/nested/subdirectory/tree/contracts/openapi.yaml`.\n",
+        )
+        result = self.run_check({"paths"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_skill_own_template_file_is_not_a_truth_artifact(self) -> None:
+        self.write("skills/x/rules/r.md", "Place in `skills/axb-data-plan/data-model.md`.\n")
+        result = self.run_check({"paths"})
+        self.assertEqual(result.findings, [])
+
+    def test_abbreviation_contextualised_by_truth_on_the_same_line_passes(self) -> None:
+        self.write("skills/x/rules/r.md", "Read the relevant contracts/data, and `specs/truth/techstack.md`.\n")
+        result = self.run_check({"paths"})
+        self.assertEqual(result.findings, [])
+
+    def test_package_local_artifact_beside_a_conforming_path_is_still_caught(self) -> None:
+        # The line-scoped exemption must not swallow a real violation on the same line.
+        self.write(
+            "skills/x/rules/r.md",
+            "Reads `specs/truth/contracts/a.yaml` and also a package-local `contracts/b.yaml`.\n",
+        )
+        result = self.run_check({"paths"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("contracts/b.yaml", result.findings[0].message)
+
     def test_invariant_id_is_not_an_artifact(self) -> None:
         # `data-model-covers-all-state` is an invariant id, not a reference to data-model.md
         self.write("skills/x/rules/r.md", "- **data-model-covers-all-state** — everything.\n")
@@ -172,17 +216,35 @@ class PlanPackagePrefixTests(Fixture):
         result = self.run_check({"paths"})
         self.assertEqual(result.findings, [])
 
+    def test_whitespace_gap_before_placeholder_is_caught(self) -> None:
+        # Regression: `rstrip()` erased the gap, so a form that renders no valid path
+        # passed (review of #21, finding 4).
+        #
+        # The prefix starts the line, so the boundary check is skipped (`before == 0`) and
+        # only the adjacency check can fire. Otherwise the two checks overlap and mask each
+        # other, making this test unable to distinguish them.
+        self.write("skills/x/templates/t.md", "specs/plans/ {{PLAN_PACKAGE}}\n")
+        result = self.run_check({"paths"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("directly", result.findings[0].message)
+
+    def test_prefix_following_other_path_characters_is_caught(self) -> None:
+        # `foo-specs/plans/` merely *ends* with the string; it does not start a path.
+        self.write("skills/x/templates/t.md", "`foo-specs/plans/{{PLAN_PACKAGE}}`\n")
+        result = self.run_check({"paths"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+
 
 class TokenRegistryTests(Fixture):
     """Invariant 4 — #15's registration failures and #16's variant drift."""
 
     def test_token_missing_from_its_section_is_caught(self) -> None:
         data = json.loads(json.dumps(MINIMAL_REGISTRY))
-        data["tokens"].append({"token": "Stdout", "section": "5.2 Then Granularity", "kind": "then-channel"})
+        data["tokens"].append({"token": "Landing", "section": "5.2 Then Granularity", "kind": "then-channel"})
         self._write_registry(data)
         result = self.run_check({"tokens"})
         self.assertEqual(len(result.findings), 1, result.findings)
-        self.assertIn("Stdout", result.findings[0].message)
+        self.assertIn("Landing", result.findings[0].message)
 
     def test_registry_naming_a_missing_section_is_caught(self) -> None:
         data = json.loads(json.dumps(MINIMAL_REGISTRY))
@@ -202,11 +264,35 @@ class TokenRegistryTests(Fixture):
         result = self.run_check({"tokens"})
         self.assertEqual(len(result.findings), 1, result.findings)
 
+    def test_sentence_case_drift_is_caught(self) -> None:
+        # Regression: only lower/UPPER/Title were generated, so the likeliest drift in a
+        # repo whose vocabulary mixes `Must-check` with `Exit Code` escaped (review of #21,
+        # finding 3).
+        self.write("skills/x/SKILL.md", "The `Exit code` channel.\n")
+        result = self.run_check({"tokens"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("Exit Code", result.findings[0].message)
+
+    def test_drifted_token_with_trailing_cell_content_is_caught(self) -> None:
+        # Regression: the span had to *equal* a variant, so the natural quoted form of a
+        # cell carrying content after the colon escaped (review of #21, finding 5).
+        self.write("skills/x/SKILL.md", "| row | `Must-Check: foo` |\n")
+        result = self.run_check({"tokens"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("Must-check", result.findings[0].message)
+
     def test_ordinary_prose_is_not_a_token_reference(self) -> None:
         # Unbackticked prose is English, not a token naming.
         self.write("skills/x/SKILL.md", "The authoritative state must land in the store.\n")
         result = self.run_check({"tokens"})
         self.assertEqual(result.findings, [])
+
+    def test_different_phrase_sharing_a_token_prefix_passes(self) -> None:
+        # `write-back data` is a distinct phrase (a §6.2 guidance label), not a drift of
+        # `Write-back`; prefix matching must require a colon delimiter.
+        self.write("skills/x/SKILL.md", "| `write-back data`: the latest summary |\n")
+        result = self.run_check({"tokens"})
+        self.assertEqual(result.findings, [], result.findings)
 
     def test_backticked_path_containing_a_token_substring_passes(self) -> None:
         self.write("skills/x/SKILL.md", "Read `rules/definition-of-done-and-writeback-criteria.md`.\n")
@@ -217,6 +303,27 @@ class TokenRegistryTests(Fixture):
         self.write("skills/x/SKILL.md", "Open the cell with `Must-check`.\n")
         result = self.run_check({"tokens"})
         self.assertEqual(result.findings, [])
+
+
+class SectionParserTests(Fixture):
+    """A fenced example inside a defining section must not truncate it.
+
+    Markdown-about-markdown is this repo's normal mode, so a section that gains a fenced
+    example containing a `## ...` line would otherwise make every token below it read as
+    missing (review of #21, finding 10).
+    """
+
+    def test_fenced_heading_does_not_truncate_the_defining_section(self) -> None:
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        text = standards.read_text()
+        text = text.replace(
+            "### 5.2 Then Granularity\n",
+            "### 5.2 Then Granularity\n\nA fenced example:\n\n```md\n## 9. Not a real heading\n```\n",
+            1,
+        )
+        standards.write_text(text)
+        result = self.run_check({"tokens"})
+        self.assertEqual(result.findings, [], result.findings)
 
 
 class NormativeRefTests(Fixture):

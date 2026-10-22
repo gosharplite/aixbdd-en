@@ -15,12 +15,14 @@ SHELL := /bin/bash
 # The scripts carry PEP 723 headers (`requires-python >= 3.10`) that only `uv run` honours.
 # A bare python3 below 3.10 fails to parse `str | None`. Prefer uv when it is installed;
 # fall back to python3 and let check-python report a clear error rather than a SyntaxError.
+# RUN must be a *complete* interpreter command, because recipes pass interpreter flags to it
+# (`-c`, `-m`). `uv run` alone accepts neither — it needs `uv run python …`.
 PYTHON ?= python3
 UV := $(shell command -v uv 2>/dev/null)
 ifeq ($(strip $(UV)),)
 RUN := $(PYTHON)
 else
-RUN := uv run
+RUN := uv run python
 endif
 
 SCRIPTS := scripts
@@ -38,7 +40,7 @@ help: ## List targets
 
 check-python: ## Verify the interpreter the scripts need
 	@$(RUN) -c 'import sys; assert sys.version_info >= (3, 10), f"python {sys.version.split()[0]} is too old; scripts need >= 3.10 (install uv or set PYTHON)"'
-	@echo "interpreter OK: $(RUN)"
+	@echo "interpreter OK: $(RUN) ($(shell $(RUN) -c 'import sys; print("python " + sys.version.split()[0])'))"
 
 check-paths: check-python ## Invariants 1-3: specs/ roots, truth paths, plan-package prefix
 	@$(RUN) $(CHECKER) --only paths --quiet-candidates
