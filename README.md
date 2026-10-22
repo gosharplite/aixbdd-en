@@ -207,12 +207,13 @@ clone must run `make install-hooks` once, and **a fresh clone is ungated until s
 A forge-side gate would be universal but vendor-locked; this repository would rather be
 portable than universal.
 
-`make check` runs five groups:
+`make check` runs six groups:
 
 | Target | Checks |
 | --- | --- |
 | `make check-paths` | no `specs/` root other than `plans`/`truth`; no truth artifact read as package-local; the plan-package placeholder always prefixed by `specs/plans/` |
 | `make check-tokens` | the fixed-token registry agrees with its definitions, and tokens are spelled canonically wherever they are named |
+| `make check-names` | every backticked slash command names a real skill, and every `§N` names a real `STANDARDS.md` section |
 | `make check-refs` | **candidate report, never fails** — normative references to issues, and rules asserting a delivery gate (a human decides whether the check behind each exists) |
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |

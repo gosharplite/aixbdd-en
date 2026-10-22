@@ -12,7 +12,7 @@ meaningless there. The user-facing skill invocations (e.g. the DSL topology audi
 `axb-gherkin-and-dsl/SKILL.md` Phase 6 tells an agent to run inside a user's project)
 are authoritative in their own skill and are deliberately not restated here.
 
-Invariants 1-4 **fail** on violation. Invariants 5-6 **report candidates only** and never
+Invariants 1-4 and 7-8 **fail** on violation. Invariants 5-6 **report candidates only** and never
 fail: both need human triage (a citation may record provenance or be load-bearing; a
 delivery claim may name a real check or none), and a check that fails on candidates it
 cannot triage gets deleted. The triage criterion is printed with each candidate instead.
@@ -419,6 +419,88 @@ def check_token_registry(result: Result, allowlist: dict, root: Path, sources: l
 
 
 # --------------------------------------------------------------------------------------
+# Invariants 7-8: references that must resolve (fail)
+# --------------------------------------------------------------------------------------
+
+SKILL_REF_RE = re.compile(r"`/([a-z][a-z0-9-]*)`")
+
+# Backticked slash tokens that are NOT command references. Deliberately a small, reviewed
+# set rather than a pattern: the whole point of this invariant is that a stale skill name
+# looks exactly like a live one, so the exemption must be explicit per token.
+#
+#   ws — an HTTP route (`FastAPI /ws`), not a command.
+#
+# The test suite asserts every entry here is still referenced somewhere, so a stale
+# exemption fails rather than silently widening the check.
+NON_SKILL_SLASH_TOKENS = {"ws"}
+
+
+def check_skill_references(result: Result, root: Path, sources: list[Source]) -> None:
+    """Invariant 7: every backticked `/command` names a skill that exists.
+
+    Deliberately **not** restricted to `axb-` names. The defects this exists to catch were
+    `/plan`, `/plan-with-class-diagram` and `/skill-engineering` (#2) — none of which carry
+    the prefix — so an `axb-`-only pattern would pass every one of them. That is how the
+    first version of this check missed its own motivating cases.
+    """
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        result.fail("skill-references", "no `skills/` directory to resolve references against")
+        return
+    known = {p.name for p in skills_dir.iterdir() if p.is_dir()}
+
+    for path, lines in sources:
+        for number, line in enumerate(lines, start=1):
+            for match in SKILL_REF_RE.finditer(line):
+                name = match.group(1)
+                if name in known or name in NON_SKILL_SLASH_TOKENS:
+                    continue
+                result.fail(
+                    "skill-references",
+                    f"`/{name}` is not a skill under `skills/` — a command reference must name a "
+                    "real skill; if this is not a command, add it to NON_SKILL_SLASH_TOKENS with a reason",
+                    path,
+                    number,
+                )
+
+
+SECTION_REF_RE = re.compile(r"§(\d+(?:\.\d+)?)")
+
+
+def check_section_references(result: Result, root: Path, sources: list[Source]) -> None:
+    """Invariant 8: every `§N` naming a STANDARDS.md section resolves to a real heading.
+
+    Would have caught #6 finding 2. One narrow exclusion, stated rather than hidden: a `§`
+    preceded by a licence identifier (`Apache-2.0 §4(d)`) refers to that licence, not to the
+    standard. `STANDARDS.md` is skipped because it cites its own section numbers in prose.
+    """
+    defining = root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+    if not defining.is_file():
+        return
+    document = defining.read_text(encoding="utf-8")
+    known = set(re.findall(r"^##+ (\d+)[\. ]", document, re.M))
+    known |= set(re.findall(r"^### (\d+\.\d+)", document, re.M))
+
+    for path, lines in sources:
+        if path == defining:
+            continue
+        for number, line in enumerate(lines, start=1):
+            for match in SECTION_REF_RE.finditer(line):
+                before = line[max(0, match.start() - 16) : match.start()]
+                if re.search(r"Apache-[\d.]+\s*$", before):
+                    continue
+                section = match.group(1)
+                if section in known:
+                    continue
+                result.fail(
+                    "section-references",
+                    f"`§{section}` does not name a section of `skills/axb-gherkin-and-dsl/STANDARDS.md`",
+                    path,
+                    number,
+                )
+
+
+# --------------------------------------------------------------------------------------
 # Invariants 5-6: candidate reports (never fail)
 # --------------------------------------------------------------------------------------
 
@@ -492,6 +574,10 @@ def run(root: Path, selected: set[str] | None = None) -> Result:
         ),
         "tokens": lambda: check_token_registry(result, allowlist, root, sources),
         "refs": lambda: (check_normative_refs(result, sources), check_asserted_enforcement(result, sources)),
+        "names": lambda: (
+            check_skill_references(result, root, sources),
+            check_section_references(result, root, sources),
+        ),
     }
     for name, check in checks.items():
         if selected and name not in selected:
@@ -504,7 +590,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--only",
-        choices=("paths", "tokens", "refs"),
+        choices=("paths", "tokens", "refs", "names"),
         action="append",
         help="run only this group (repeatable); default runs all",
     )

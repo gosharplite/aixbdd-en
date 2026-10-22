@@ -326,6 +326,72 @@ class SectionParserTests(Fixture):
         self.assertEqual(result.findings, [], result.findings)
 
 
+class SkillReferenceTests(Fixture):
+    """Invariant 7 — the #2 escapes: `/plan`, `/plan-with-class-diagram`, `/skill-engineering`."""
+
+    def test_nonexistent_skill_is_caught(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/plan` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/plan", result.findings[0].message)
+
+    def test_all_three_historically_shipped_escapes_are_caught(self) -> None:
+        # #2's actual defect text. None carries the `axb-` prefix, which is exactly why an
+        # `axb-`-only pattern passed all three and the check missed its own motivating cases.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        for name in ("/plan", "/plan-with-class-diagram", "/skill-engineering"):
+            self.write("skills/x/SKILL.md", f"Follow up via `{name}`.\n")
+            result = self.run_check({"names"})
+            self.assertEqual(len(result.findings), 1, (name, result.findings))
+            self.assertIn(name, result.findings[0].message)
+
+    def test_http_route_is_not_a_command_reference(self) -> None:
+        # `FastAPI /ws` is an endpoint, not a skill. The exemption is per token and stated.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_real_skill_passes(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/axb-real` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_unbackticked_prose_is_not_a_reference(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Then run plan as described.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+
+class SectionReferenceTests(Fixture):
+    """Invariant 8 — the #6 finding 2 escape: a section name that does not exist."""
+
+    def test_nonexistent_section_is_caught(self) -> None:
+        self.write("skills/x/SKILL.md", "Read the §9.9 section.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§9.9", result.findings[0].message)
+
+    def test_real_section_passes(self) -> None:
+        self.write("skills/x/SKILL.md", "Read §5.2 for the channels.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_parent_section_number_passes(self) -> None:
+        self.write("skills/x/SKILL.md", "See §4 and §7.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
+        # `Apache-2.0 §4(d)` refers to the licence, not to STANDARDS.md §4.
+        self.write("README.md", "Required by Apache-2.0 §4(d), verbatim.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+
 class NormativeRefTests(Fixture):
     """Invariant 5 — #16's normative forward reference. Reports, never fails."""
 
