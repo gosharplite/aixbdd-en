@@ -472,6 +472,28 @@ class SectionReferenceTests(Fixture):
         result = self.run_check({"names"})
         self.assertEqual(result.findings, [], result.findings)
 
+    def test_standards_md_is_checked_like_any_other_file(self) -> None:
+        """#27 finding 6: the self-skip exempted the one file that renumbering breaks.
+
+        `STANDARDS.md` cites its own section numbers throughout, and those resolve against
+        the same `known` set, so the skip was never needed for them. It did mean that the
+        file most likely to orphan references — a renumbering there is a single edit that
+        can strand every citation in the tree, which is what happened in #15 — was the one
+        file the check could not see.
+        """
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(MINIMAL_STANDARDS + "\nSee §99.1 above.\n", encoding="utf-8")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§99.1", result.findings[0].message)
+
+    def test_standards_md_self_citations_resolve(self) -> None:
+        # The positive: removing the skip must not fail the file's own §4 / §5.2 prose.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(MINIMAL_STANDARDS + "\n§4 and §5.2 are its own sections.\n", encoding="utf-8")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
     def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
         # `§11` is deliberately a number `MINIMAL_STANDARDS` does not declare. The first
         # version of this test cited `§4(d)` — and `## 4.` exists in the fixture — so it

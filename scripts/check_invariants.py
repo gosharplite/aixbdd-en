@@ -527,7 +527,10 @@ def check_section_references(
     (#27 finding 5): truncating `§4.3.1` to `§4.3` passed any three-level dangling
     reference whose parent existed, and `§ 5.2` was not checked at all.
 
-    `STANDARDS.md` is skipped because it cites its own section numbers in prose.
+    `STANDARDS.md` is **not** skipped (#27 finding 6). It cites its own section numbers in
+    prose, and those self-citations resolve against the same `known` set, so a skip was
+    never needed for them. What the skip did was exempt the one file whose renumbering can
+    orphan references in a single edit — the failure that actually happened in #15.
     """
     defining = root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
     if not defining.is_file():
@@ -535,8 +538,6 @@ def check_section_references(
     known = standard_sections(defining.read_text(encoding="utf-8"))
 
     for path, lines in sources:
-        if path == defining:
-            continue
         for number, line in enumerate(lines, start=1):
             for match in SECTION_REF_RE.finditer(line):
                 section = match.group(1)
