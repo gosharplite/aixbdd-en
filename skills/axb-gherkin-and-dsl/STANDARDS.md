@@ -20,7 +20,7 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 | §5.2's `Must-check` Then marker and channel labels (`Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen`), and §5.1's Given / When sub-labels (`How` / `State landing` / `Write-back` / `No-check`) | **fixed** | cross-project shared contract vocabulary; `Must-check` is the single Then marker for every interface kind (§5.2 defines it, §6 and §7 use it) |
 | §7's CLI Given / When sub-labels (`Invocation` / `Working state` / `Landing` / `Captured outputs` / `No-check`) and Then channels (`Stdout` / `Stderr` / `Exit Code` / `Filesystem State` / `Re-read Confirmation` / `Should Not Happen`) | **fixed** | cross-project shared contract vocabulary; §7 is the single enumeration for CLI, and the two Then channels it shares with §5.2 keep their §5.2 definitions |
 
-- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens and the §5 / §7 contract channel vocabulary. (§6's granularity labels are guidance for how to write frontend semantics, not fixed contract tokens, so they stay project-declared prose — which is why the table registers no §6 row.)
+- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens, the §5 / §7 contract channel vocabulary, and the `Must-check` cell marker. (§6's granularity labels are guidance for how to write frontend semantics, not fixed contract tokens, so they stay project-declared prose — which is why the table registers no §6 row.)
 - This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in English") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
 
 ## 1. Gherkin Language Boundaries & Sentence Convergence
@@ -123,23 +123,26 @@ Then is written as a "verification contract", not force-fitted into a fixed temp
 
 **`Must-check` — the Then cell's opening marker.** A Then row's implementation-semantics cell opens
 with `Must-check`, which declares the row a *mandatory verification contract*: the assertions that
-follow are the evidence this step's outcome must produce, not optional commentary. It is the Then
-counterpart of `No-check` in the Given / When cell (§5.1), and like `No-check` it is a **marker, not a
-channel** — never write it as though it were one, and never write a Then cell without it.
+follow are the evidence this step's outcome must produce, not optional commentary. It is a **marker,
+not a channel** — `Must-check` opens the cell, and the channels that follow are what the step is
+asserted on. Never write it as though it were one of those channels, and never write a Then cell
+without it.
 
-After `Must-check`, the cell either:
+After `Must-check`, a backend or frontend cell takes one of two forms:
 
-- names the channel labels above and states the fact each must carry — `Must-check`: `Presented Result`:
-  …; `Authoritative State`: …; and
-- **or**, when a single straightforward assertion suffices, states that fact directly in one clause —
-  `Must-check`: the screen and the backend discount status are consistent.
+1. It names channel labels and states the fact each must carry — `Must-check`: `Presented Result`: …;
+   `Authoritative State`: ….
+2. Or, when the assertion is a single fact that inherently spans channels — a cross-surface
+   consistency check, or a negative fact — it states that fact directly in one clause:
+   `Must-check`: the screen and the backend discount status are consistent. Use this form only for
+   facts that genuinely span channels; a fact that belongs to one channel is stated on that channel.
 
-Both forms are conforming. What is *not* conforming is a Then cell that names no assertable fact, or one
-that opens with any other prefix: this is the only Then prefix, and new ones must not be invented
-(the registry in #12 is where such a thing would be registered if it ever needed adding).
+**For a CLI Then cell, only form 1 is conforming** — §7 requires every CLI Then to name its channel,
+and that requirement is not relaxed by this marker. See §7.2.
 
-`Must-check` is not backend-specific: the frontend (§6) and CLI (§7) Then cells open with it too,
-followed by their own channels or a direct fact. §5.2 is its single definition.
+`Must-check` is the only Then prefix. Do not invent others; introduce no further undocumented labels.
+It is not backend-specific: the frontend (§6) and CLI (§7) Then cells open with it too. §5.2 is its
+single definition.
 
 Principles:
 
@@ -170,10 +173,11 @@ Frontend implementation semantics should prioritize around:
 - `wait conditions`
 - `write-back data`
 
-These five are guidance for how to write frontend semantics, not fixed contract tokens (which is why
-the Project Language table scopes §6 as project-declared). One thing in a frontend Then cell *is* a
-fixed token: it opens with **`Must-check`**, defined once in §5.2 — a frontend Then is a verification
-contract exactly as a backend one is.
+These five are guidance for how to write frontend semantics, not fixed contract tokens — see the
+recap bullet in "Project Language", which states that §6's labels stay project-declared and notes that
+the table carries no §6 row. One thing in a frontend Then cell *is* a fixed token: it opens with
+**`Must-check`**, defined once in §5.2 — a frontend Then is a verification contract exactly as a
+backend one is.
 
 ### 6.3 Strictness Requirements
 
@@ -206,9 +210,12 @@ Principles:
 
 ### 7.2 Then Granularity
 
-Then is written as a verification contract, and must at least pick the relevant channels. The cell opens
-with **`Must-check`** — defined once in §5.2, and the single Then marker for every interface kind —
-followed by the channels below or a directly stated fact.
+Then is written as a verification contract, and must name the relevant channels. The cell opens with
+**`Must-check`** — defined once in §5.2, and the single Then marker for every interface kind — followed
+by channels from the list below. Unlike §5.2's backend/frontend form 2, a CLI Then cell may **not**
+state a bare fact without naming its channel: the whole point of §7 is that "the output" is not a
+channel, so `Must-check: the workspace was created` is non-conforming here even though it is conforming
+for a backend row.
 
 - `Stdout`: this command's standard output
 - `Stderr`: this command's diagnostics
