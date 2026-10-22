@@ -178,10 +178,24 @@ English translation appended for convenience (the original text is authoritative
 > authoritative in their own skill. This README does not restate them.
 
 ```bash
-make check     # everything: invariant checks + the DSL topology audit of the example tree
-make test      # the checkers' own test suites
-make help      # list targets
+make install-hooks   # once per clone: run the gate before every commit
+make check           # everything: invariant checks + the DSL topology audit of the example tree
+make test            # the checkers' own test suites
+make help            # list targets
 ```
+
+**`make install-hooks` is the part that matters**, because a gate nobody runs cannot tell a
+clean tree from an unexamined one. It sets `git config core.hooksPath scripts/hooks`, so the
+tracked `pre-commit` hook runs `make check` before every commit (~0.4s) and blocks the commit
+if any invariant fails. `git commit --no-verify` skips it, as git intends — a reminder, not a
+lock.
+
+The hook is deliberately **git-native rather than forge-specific**: `core.hooksPath` is a git
+feature, so it works identically on any remote or none, needs no network, and survives a move
+away from any particular hosting service. The trade-off is honest: `core.hooksPath` is local
+configuration, so each clone must run `make install-hooks` once. A forge-side gate would be
+universal but would tie the repository to that forge; this repository would rather be portable
+than universal.
 
 `make check` runs four groups:
 

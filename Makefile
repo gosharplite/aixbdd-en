@@ -29,7 +29,8 @@ SCRIPTS := scripts
 CHECKER := $(SCRIPTS)/check_invariants.py
 EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 
-.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test
+.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test \
+        install-hooks uninstall-hooks
 
 help: ## List targets
 	@echo "Targets for developing aixbdd-en (not for skill users):"
@@ -62,3 +63,12 @@ check: check-paths check-tokens check-refs check-params check-audit ## Run every
 test: check-python ## Run the checkers' own test suites
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
+
+install-hooks: ## Point git at the tracked hooks, so `make check` runs before every commit
+	@git config core.hooksPath $(SCRIPTS)/hooks
+	@echo "core.hooksPath = $(SCRIPTS)/hooks"
+	@echo "The invariant gate now runs before every commit. Bypass with: git commit --no-verify"
+
+uninstall-hooks: ## Stop running the gate on commit
+	@git config --unset core.hooksPath || true
+	@echo "core.hooksPath unset; commits are no longer gated.

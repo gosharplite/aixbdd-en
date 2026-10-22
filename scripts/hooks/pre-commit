@@ -1,0 +1,41 @@
+#!/bin/sh
+# Run the repository's invariant gate before a commit.
+#
+# Installed by `make install-hooks`, which points git at this directory via
+# `core.hooksPath` — a git feature, not a forge feature, so it works the same on any
+# remote, or none at all.
+#
+# The gate takes well under a second, so it runs in full rather than a subset.
+# `git commit --no-verify` bypasses it, as git intends: this is a reminder, not a lock.
+#
+# Portable on purpose: POSIX sh, no bashisms, no network, no vendor assumptions.
+
+set -e
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+if ! command -v make >/dev/null 2>&1; then
+    echo "pre-commit: 'make' not found, so the invariant gate did not run." >&2
+    echo "pre-commit: install make, or accept that this commit is ungated." >&2
+    exit 0
+fi
+
+echo "pre-commit: running the invariant gate (make check)…" >&2
+
+if make --no-print-directory check >/dev/null 2>&1; then
+    echo "pre-commit: gate passed." >&2
+    exit 0
+fi
+
+echo >&2
+echo "pre-commit: re-running with output so the failures are visible…" >&2
+make --no-print-directory check >&2 || true
+cat >&2 <<'EOF'
+
+pre-commit: the invariant gate FAILED, so this commit is blocked.
+
+Fix the failures above. `git commit --no-verify` skips the gate — do that only when
+the failures are genuinely unrelated to this change, and say so in the PR body.
+EOF
+exit 1
