@@ -110,7 +110,7 @@ Completion report:
 
 - Level: `SHOULD`
 - If `CHECKLIST_FILE` does not exist, the completion report should explicitly state that no checklist was refreshed this round, rather than letting the user mistakenly believe complete verification was done.
-- If high-impact gaps were deliberately deferred, the completion report should explain the defer reason and its impact on downstream `/axb-spec-by-example`, not just write a vague "there are still some issues to confirm".
+- If high-impact gaps were deliberately deferred, the completion report should explain the defer reason and its impact on downstream planning (`/axb-spec-by-example` for the Gherkin it enables, and `/axb-technical-research` / `/axb-system-analysis` for the design decisions it defers), not just write a vague "there are still some issues to confirm".
 - If no questions are needed at all this round, the completion report should also state that it is because all high-impact gaps are `Clear`, rather than omitting the clarification strategy judgment.
 
 ## Good Example
@@ -120,7 +120,7 @@ Completion report:
 ```md
 Report:
 - checklist: no corresponding file this round, so not refreshed
-- deferred: whether third-party notification channels are included in the first version; low impact, kept for `/axb-spec-by-example`
+- deferred: whether third-party notification channels are included in the first version; low impact, kept for the downstream planning phase (`/axb-technical-research`, `/axb-system-analysis`)
 ```
 
 ## Bad Example

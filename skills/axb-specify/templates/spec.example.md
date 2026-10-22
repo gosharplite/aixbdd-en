@@ -1,6 +1,6 @@
 # Functional Spec: Photo Date-Album Organization
 
-**Plan Package**: `specs/plans/001-organize-photo-albums/`
+**Plan Package**: `specs/plans/001-organize-photo-albums`
 
 **Created Date**: 2026-07-17
 

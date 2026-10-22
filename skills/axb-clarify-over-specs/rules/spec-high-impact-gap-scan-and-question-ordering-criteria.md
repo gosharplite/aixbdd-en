@@ -109,7 +109,7 @@ Judgment:
 
 - Level: `MUST`
 - After creating candidate questions, they must be ordered by a combined `Impact × Uncertainty` judgment, not by the order they appear in the spec or whichever gap is seen first.
-- `Impact` should first consider its surface of effect on spec correctness, cross-section consistency, formal acceptance, data model, NFR commitments, and downstream `/axb-spec-by-example`.
+- `Impact` should first consider its surface of effect on spec correctness, cross-section consistency, formal acceptance, data model, NFR commitments, and the downstream planning phase (`/axb-technical-research` and `/axb-system-analysis`) — a gap that redirects system analysis is high-impact even when it would not change Gherkin wording.
 - `Uncertainty` should consider whether the current spec admits multiple reasonable interpretations, whether they contradict each other, and whether a unique derivable answer is missing.
 - When delegating to `/axb-clarify` in a single round, carry at most 1 to 3 questions; the entire clarify session must accumulate no more than 5 questions.
 - If there are more than 3 high-impact gaps, first keep the top 1 to 3 by ranking, and list the rest as deferred high-risk gaps in the completion report; do not dump all questions at once.

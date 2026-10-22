@@ -4,6 +4,7 @@
 - Each `/axb-specify` execution must create a new `NNN-<slug>` plan package under `specs/plans/`.
 - `NNN` is the highest existing plan package number plus one; existing packages must not be overwritten.
 - Even if this requirement modifies or deletes existing behavior, create a new plan package, keeping old plans as history.
+- This rule owns the `{{PLAN_PACKAGE}}` placeholder convention used by every template: its value is the bare `NNN-<slug>` directory name (e.g. `004-room-game-chat`, no trailing slash, no `specs/plans/` prefix), and every writer must spell the `specs/plans/` prefix literally at its own use site. Do not put the prefix inside the placeholder's value.
 
 ## Good Example
 

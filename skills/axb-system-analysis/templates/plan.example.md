@@ -25,10 +25,15 @@ specs/plans/001-course-subscription-checkout/
 └── tasks.md
 ```
 
-The plan package holds plan-side artifacts only. This round's API contract is not stored here: it
-lives in `specs/truth/contracts/checkout-api.yaml`, alongside the webhook contract this feature also
-maintains. The data model lives in `specs/truth/data/**` as DBML, and the stack in
-`specs/truth/techstack.md`.
+The plan package holds plan-side artifacts only. This round's API contract is not stored here.
+
+**Truth this feature maintains**: the subscription checkout API contract in
+`specs/truth/contracts/checkout-api.yaml` (new endpoints for order creation, payment initiation and
+status queries) and the payment webhook contract in `specs/truth/contracts/payment-webhook.yaml`
+(extended event set); the order, payment and subscription tables in `specs/truth/data/**`
+(`orders.dbml`, `subscriptions.dbml`); and the `specs/truth/techstack.md` entries for the payment
+provider SDK and the webhook verification library. No `specs/truth/features/**` change: this
+feature's interfaces reuse the existing backend and frontend DSL rows.
 
 ### Source Structure (repository root)
 

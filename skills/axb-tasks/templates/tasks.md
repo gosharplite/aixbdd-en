@@ -1,6 +1,6 @@
 # Tasks: {{FEATURE_NAME}}
 
-**Plan Package**: `{{PLAN_PACKAGE}}`
+**Plan Package**: `specs/plans/{{PLAN_PACKAGE}}`
 **Core Inputs**: `spec.md`, `plan.md`, `research.md`, `truth-delta.md`, `specs/truth/techstack.md`, `specs/truth/contracts/**`, `specs/truth/data/**`, `specs/truth/features/**`, `ui/**`
 
 ## Task Binding Contract

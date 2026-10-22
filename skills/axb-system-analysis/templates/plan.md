@@ -13,20 +13,29 @@ specs/plans/{{PLAN_PACKAGE}}/
 ├── features/
 │   └── acceptance/
 │       └── *.feature            # /axb-spec-by-example
-├── ui/
-│   ├── ui-plan.md               # /axb-ui-plan
-│   └── {{UI_ARTIFACT_GLOB}}     # /axb-ui-plan: ui/*.html (web) or ui/screens/*.txt (TUI)
+├── ui/                          # /axb-ui-plan; absent for a plain line-oriented CLI
+│   ├── ui-plan.md
+│   ├── *.html                   # HTML mode (web / frontend)
+│   └── screens/                 # terminal mode (CLI with a TUI), instead of *.html
+│       ├── entry.txt
+│       └── NN-<name>.txt
 ├── research.md                  # /axb-technical-research
 ├── plan.md                      # /axb-system-analysis (this file)
 └── tasks.md                     # /axb-tasks
 ```
 
+**Truth this feature maintains**: {{TRUTH_ARTIFACTS_PARAGRAPH}}
+
 <!--
+  Fill {{TRUTH_ARTIFACTS_PARAGRAPH}} with the concrete `specs/truth/**` artifacts this feature adds
+  or changes, grouped by owner (contracts, data, techstack, features/DSL). This is the mapping
+  `/axb-tasks` consumes when it builds the truth-impact inventory, so it must name paths, not
+  categories.
+
   The package holds only plan-side artifacts. Truth is not package-local: API contracts live in
   `specs/truth/contracts/**`, data models in `specs/truth/data/**`, the stack in
   `specs/truth/techstack.md`, and executable interface features + DSL in `specs/truth/features/**`.
   Do not create a package-local `contracts/` or `data-model.md`; those layouts predate this design.
-  A plain line-oriented CLI has no `ui/` directory (`/axb-ui-plan` is skipped for it).
 -->
 
 ### Source Structure (repository root)

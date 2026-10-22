@@ -34,7 +34,7 @@
 ## Ready Judgment
 
 - Ready: Yes
-- Reason: The remaining undecided items will not change the current story splitting, formal acceptance criteria, or the main direction of `/axb-spec-by-example`.
+- Reason: The remaining undecided items will not change the current story splitting, formal acceptance criteria, or the main direction of downstream planning.
 
 ## Recommended Next Step
 
