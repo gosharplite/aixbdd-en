@@ -224,7 +224,7 @@ clone must run `make install-hooks` once, and **a fresh clone is ungated until s
 A forge-side gate would be universal but vendor-locked; this repository would rather be
 portable than universal.
 
-`make check` runs five groups:
+`make check` runs six groups:
 
 | Target | Checks |
 | --- | --- |
@@ -232,6 +232,7 @@ portable than universal.
 | `make check-tokens` | the fixed-token registry agrees with its definitions, and tokens are spelled canonically wherever they are named |
 | `make check-refs` | **candidate report, never fails** — normative references to issues, and rules asserting a delivery gate (a human decides whether the check behind each exists) |
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
+| `make check-ui-plan` | every frame or page a `ui-plan` example refers to is one that plan declares (#24 item 3) |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |
 
 Every group **fails** on violation except `check-refs`, which only **reports**, because its two
@@ -251,6 +252,13 @@ Supporting files:
   stale, so an exemption cannot silently widen.
 - `scripts/check_dsl_default_params.py` — executes `STANDARDS.md` §4.3 against the example tree's
   `Default Params` cells. Seeded from #19 and the seed for #24 item 5.
+- `scripts/check_ui_plan_outputs.py` — executes "no reference to a frame or page the plan does not
+  declare" against both `ui-plan` examples: every `Corresponding … file:` line, every `Keybinding
+  Map` target frame and every `State Transition List` endpoint must appear on its own plan's
+  `Planned output files:` line. Built from #24 item 3, whose two historical instances (#14) were
+  contradictions of exactly that kind. Prose endpoints that name a state rather than a file are
+  counted and printed, not failed — they are not machine-resolvable, and a check that fails on
+  what it cannot triage gets deleted.
 - `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),
   `pre-commit-stub` (installed into `.git/hooks`, branch-independent, fails closed) and
   `classify-hook` (the single definition of which hook is ours).
@@ -258,8 +266,10 @@ Supporting files:
   partial-staged violations, a branch without the gate script, a moved clone, a failed
   upgrade, uninstall, foreign hooks and a stale stub. Every one of these was a defect found
   by review or by probing, so they belong in `make test` rather than in a PR transcript.
-- `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py` — prove each check
-  against **its own historical escape** rather than only against a clean tree.
+- `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py`,
+  `scripts/test_check_ui_plan_outputs.py` — prove each check against **its own historical escape**
+  rather than only against a clean tree. The `ui-plan` suite also pins the tree's reference count,
+  so a glob that stops matching fails the suite instead of quietly checking nothing.
 
 The rationale, the twelve failure modes these checks exist for, and the defect each would have
 caught are recorded in [#12](https://github.com/gosharplite/aixbdd-en/issues/12).
