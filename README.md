@@ -267,6 +267,34 @@ The consequence is worth stating plainly, because it is the *why* that keeps the
 optimised away: **the exemption is the expensive part of adding a check.** Budget the fixtures
 there, and review there, first.
 
+### Coverage accounting is the other half
+
+The exemption rule covers what a checker *deliberately* tolerates. The fourth checker (#28) put
+its defects somewhere else entirely, and the two rules compose: **an exemption you did not write is
+a drop you did not print.** Both are ways for an item to leave the audit, and only one of them
+leaves a record.
+
+`scripts/check_ui_plan_outputs.py` lost five items exactly that way. It had two hand-synchronised
+parsers over the same tables — `references_of` collected checkable references, `prose_count`
+counted the rest — so anything the first dropped the second had to drop identically or the item
+disappeared from the verdict *and* from the printed gap. Three did: an empty-key continuation row
+(the separator heuristic tested `set(key_cell) <= set("-: ")`, and the empty set is a subset of
+everything), a backticked target containing a space, and the prose tail of a half-resolvable
+transition line. Every one of them was silent.
+
+So:
+
+4. **Every item a scanner drops must land in a ledger the output prints.** One pass classifies each
+   site exactly once as *checked* or *prose*, which makes `checked + prose == seen` an arithmetic
+   identity rather than a coincidence, and the gate prints all three numbers on every run.
+   Dropped-but-unprinted is how every one of #28's escapes began.
+
+The reason to keep this separate from the rules above is that the failure modes differ: an
+exemption is written under pressure to make the gate pass, and a drop happens while someone is
+simply reading the wrong variable. The defence is the same shape either way — make the omission
+visible in the output, not just absent from it. Hence the numbering runs on rather than restarting:
+the four rules answer one question, *what left the audit?*, from its two directions.
+
 Supporting files:
 
 - `scripts/check_invariants.py` — stdlib only, PEP 723 header, hand-runnable with `--root`,
