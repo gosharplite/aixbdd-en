@@ -34,8 +34,8 @@ EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 # files on disk. Tooling always comes from this worktree; only the inspected tree moves.
 ROOT ?= .
 
-.PHONY: help check check-paths check-tokens check-names check-refs check-params check-audit check-python test \
-        install-hooks uninstall-hooks
+.PHONY: help check check-paths check-tokens check-names check-refs check-params check-ui-plan \
+        check-audit check-python test install-hooks uninstall-hooks
 
 help: ## List targets
 	@echo "Targets for developing aixbdd-en (not for skill users):"
@@ -63,12 +63,15 @@ check-refs: check-python ## Invariants 5-6: candidate report for normative refs 
 check-params: check-python ## STANDARDS §4.3: every Default Params cell conforms
 	@$(RUN) $(SCRIPTS)/check_dsl_default_params.py --root $(ROOT)
 
+check-ui-plan: check-python ## #24 item 3: every frame/page a ui-plan refers to is declared
+	@$(RUN) $(SCRIPTS)/check_ui_plan_outputs.py --root $(ROOT)
+
 check-audit: check-python ## DSL topology audit of this repo's own example tree
 	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(ROOT)/$(EXAMPLES)
 
-check: check-paths check-tokens check-names check-refs check-params check-audit ## Run everything (default gate)
+check: check-paths check-tokens check-names check-refs check-params check-ui-plan check-audit ## Run everything (default gate)
 
-test: check-python ## Run the checkers' own test suites (invariants, params, hook lifecycle)
+test: check-python ## Run the checkers' own test suites (invariants, params, ui-plan, hook lifecycle)
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
 

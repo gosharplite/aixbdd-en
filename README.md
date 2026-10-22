@@ -236,6 +236,7 @@ it); a number in front of the table has the same failure mode and none of the ut
 | `make check-names` | every backticked slash command names a real skill, and every `§N` names a real `STANDARDS.md` section |
 | `make check-refs` | **candidate report, never fails** — normative references to issues, and rules asserting a delivery gate (a human decides whether the check behind each exists) |
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
+| `make check-ui-plan` | every frame or page a `ui-plan` example refers to is one that plan declares (#24 item 3) |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |
 
 Every group **fails** on violation except `check-refs`, which only **reports**, because its two
@@ -266,6 +267,34 @@ The consequence is worth stating plainly, because it is the *why* that keeps the
 optimised away: **the exemption is the expensive part of adding a check.** Budget the fixtures
 there, and review there, first.
 
+### Coverage accounting is the other half
+
+The exemption rule covers what a checker *deliberately* tolerates. The fourth checker (#28) put
+its defects somewhere else entirely, and the two rules compose: **an exemption you did not write is
+a drop you did not print.** Both are ways for an item to leave the audit, and only one of them
+leaves a record.
+
+`scripts/check_ui_plan_outputs.py` lost five items exactly that way. It had two hand-synchronised
+parsers over the same tables — `references_of` collected checkable references, `prose_count`
+counted the rest — so anything the first dropped the second had to drop identically or the item
+disappeared from the verdict *and* from the printed gap. Three did: an empty-key continuation row
+(the separator heuristic tested `set(key_cell) <= set("-: ")`, and the empty set is a subset of
+everything), a backticked target containing a space, and the prose tail of a half-resolvable
+transition line. Every one of them was silent.
+
+So:
+
+4. **Every item a scanner drops must land in a ledger the output prints.** One pass classifies each
+   site exactly once as *checked* or *prose*, which makes `checked + prose == seen` an arithmetic
+   identity rather than a coincidence, and the gate prints all three numbers on every run.
+   Dropped-but-unprinted is how every one of #28's escapes began.
+
+The reason to keep this separate from the rules above is that the failure modes differ: an
+exemption is written under pressure to make the gate pass, and a drop happens while someone is
+simply reading the wrong variable. The defence is the same shape either way — make the omission
+visible in the output, not just absent from it. Hence the numbering runs on rather than restarting:
+the four rules answer one question, *what left the audit?*, from its two directions.
+
 Supporting files:
 
 - `scripts/check_invariants.py` — stdlib only, PEP 723 header, hand-runnable with `--root`,
@@ -279,6 +308,20 @@ Supporting files:
   staleness-tested; see "Exemptions are the expensive part" above.
 - `scripts/check_dsl_default_params.py` — executes `STANDARDS.md` §4.3 against the example tree's
   `Default Params` cells. Seeded from #19 and the seed for #24 item 5.
+- `scripts/check_ui_plan_outputs.py` — executes "no reference to a frame or page the plan does not
+  declare" against both `ui-plan` examples: every labelled screen line (`Corresponding … file:`,
+  `Entry frame:`, `Multi-page entry:`), every `Keybinding Map` target frame and every `State
+  Transition List` endpoint must appear on its own plan's `Planned output files:` line. Built from
+  #24 item 3, whose two historical instances (#14) were contradictions of exactly that kind.
+  Prose endpoints that name a state rather than a file are counted and printed, not failed — they
+  are not machine-resolvable, and a check that fails on what it cannot triage gets deleted.
+  Two structural rules, from the review of #28: **one fence mask**, because fenced content is
+  documentation *about* the format (a quoted `Planned output files:` line made a filled plan look
+  like a template; a fenced `Corresponding frame file:` example became a false failure); and **one
+  classifying pass**, because two hand-synchronised parsers let an item vanish from the verdict
+  *and* from the printed gap. The output prints `seen = checked + prose`, and `main()` fails when
+  it audited no plans — `make check` runs it, `make test` does not, so a commit-time gate that
+  judged nothing would otherwise pass every commit.
 - `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),
   `pre-commit-stub` (installed into `.git/hooks`, branch-independent, fails closed) and
   `classify-hook` (the single definition of which hook is ours).
@@ -286,8 +329,12 @@ Supporting files:
   partial-staged violations, a branch without the gate script, a moved clone, a failed
   upgrade, uninstall, foreign hooks and a stale stub. Every one of these was a defect found
   by review or by probing, so they belong in `make test` rather than in a PR transcript.
-- `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py` — prove each check
-  against **its own historical escape** rather than only against a clean tree.
+- `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py`,
+  `scripts/test_check_ui_plan_outputs.py` — prove each check against **its own historical escape**
+  rather than only against a clean tree. The `ui-plan` suite also pins the tree's reference count,
+  the skipped set and the prose count, and asserts `checked + prose == seen` over the shipped tree,
+  so a glob that stops matching or a parser that drops an item fails the suite instead of quietly
+  checking nothing.
 
 The rationale, the twelve failure modes these checks exist for, and the defect each would have
 caught are recorded in [#12](https://github.com/gosharplite/aixbdd-en/issues/12).
