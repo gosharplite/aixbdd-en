@@ -1,0 +1,67 @@
+#!/bin/sh
+# Run the repository's invariant gate before a commit.
+#
+# Installed by `make install-hooks`, which symlinks this file into `.git/hooks/pre-commit`.
+# A symlink rather than `core.hooksPath`, deliberately: hooksPath *replaces* git's hook
+# directory, which would disable every other hook the developer has and clobber any
+# existing setting. A pre-commit symlink adds one hook and touches nothing else.
+#
+# **It checks the index, not the working tree.** A commit is built from the index, so
+# `git add -p` usage makes the two differ: a violation fixed on disk but still staged
+# would pass a worktree check and land anyway. The gate snapshots the index and runs the
+# checkers against that snapshot.
+#
+# `git commit --no-verify` bypasses it, as git intends: this is a reminder, not a lock.
+# Portable on purpose: POSIX sh, no bashisms, no GNU-only flags, no network.
+
+set -eu
+
+not_gated() {
+    cat >&2 <<'EOF'
+
+pre-commit: THE GATE DID NOT RUN — this commit is ungated.
+
+Silent ungating is the thing this hook exists to prevent, so an environment problem is
+loud rather than skipped. Fix the cause above, or commit with `git commit --no-verify`
+to skip the gate deliberately.
+EOF
+    exit 1
+}
+
+command -v make >/dev/null 2>&1 || {
+    echo "pre-commit: 'make' not found." >&2
+    not_gated
+}
+
+snapshot=$(mktemp -d 2>/dev/null) || {
+    echo "pre-commit: could not create a temporary directory." >&2
+    not_gated
+}
+trap 'rm -rf "$snapshot"' EXIT INT TERM
+
+# Snapshot the index. `checkout-index -a` writes every staged blob under --prefix,
+# preserving repo-relative paths, so the snapshot is exactly what a commit would contain.
+if ! git checkout-index -a --prefix="$snapshot"/ 2>/dev/null; then
+    echo "pre-commit: could not snapshot the index." >&2
+    not_gated
+fi
+
+echo "pre-commit: running the invariant gate against the staged index…" >&2
+
+status=0
+output=$(make check ROOT="$snapshot" 2>&1) || status=$?
+
+if [ "$status" -eq 0 ]; then
+    echo "pre-commit: gate passed." >&2
+    exit 0
+fi
+
+printf '%s\n' "$output" >&2
+cat >&2 <<'EOF'
+
+pre-commit: the invariant gate FAILED against the staged index, so this commit is blocked.
+
+Fix the failures above and re-stage. `git commit --no-verify` skips the gate — do that only
+when the failures are genuinely unrelated to this change, and say so in the PR body.
+EOF
+exit 1

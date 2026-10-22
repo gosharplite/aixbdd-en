@@ -178,12 +178,36 @@ English translation appended for convenience (the original text is authoritative
 > authoritative in their own skill. This README does not restate them.
 
 ```bash
-make check     # everything: invariant checks + the DSL topology audit of the example tree
-make test      # the checkers' own test suites
-make help      # list targets
+make install-hooks   # once per clone: run the gate before every commit
+make check           # everything: invariant checks + the DSL topology audit of the example tree
+make test            # the checkers' own test suites
+make help            # list targets
 ```
 
-`make check` runs four groups:
+**`make install-hooks` is the part that matters**, because a gate nobody runs cannot tell a
+clean tree from an unexamined one. It symlinks the tracked `scripts/hooks/pre-commit` into
+`.git/hooks/`, so the gate runs before every commit (~0.4s) and blocks the commit if any
+check fails. `git commit --no-verify` skips it, as git intends — a reminder, not a lock.
+
+Two design points worth knowing:
+
+- **The gate checks the staged index, not the working tree.** A commit is built from the
+  index, so with `git add -p` the two differ: a violation fixed on disk but still staged
+  would pass a worktree check and land anyway. The hook snapshots the index
+  (`git checkout-index -a --prefix=…`) and runs the checks against that snapshot.
+- **It is a symlink, not `core.hooksPath`.** `hooksPath` *replaces* git's hook directory,
+  which would disable every other hook you have; a pre-commit symlink adds one hook and
+  leaves the rest alone. It also refuses to overwrite an existing `pre-commit`, and
+  `make uninstall-hooks` removes only its own symlink.
+
+The hook is **git-native rather than forge-specific**: symlinks into `.git/hooks/` work
+identically on any remote or none, need no network, and survive a move away from any
+particular hosting service. The trade-off is honest — this is local configuration, so each
+clone must run `make install-hooks` once, and **a fresh clone is ungated until someone does**.
+A forge-side gate would be universal but vendor-locked; this repository would rather be
+portable than universal.
+
+`make check` runs five groups:
 
 | Target | Checks |
 | --- | --- |
@@ -193,7 +217,7 @@ make help      # list targets
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |
 
-The first two groups **fail** on violation. `check-refs` only **reports**, because its two
+Every group **fails** on violation except `check-refs`, which only **reports**, because its two
 invariants need human triage: a citation that records provenance is fine while one a reader must
 follow to comply is a defect, and a delivery claim is only wrong if the named check does not exist.
 A check that fails on candidates it cannot triage gets disabled, so it reports instead.

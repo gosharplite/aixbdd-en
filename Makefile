@@ -29,7 +29,13 @@ SCRIPTS := scripts
 CHECKER := $(SCRIPTS)/check_invariants.py
 EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 
-.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test
+# The tree the checkers inspect. Defaults to this worktree; the pre-commit hook points it
+# at a snapshot of the git *index*, because a commit is built from the index, not from the
+# files on disk. Tooling always comes from this worktree; only the inspected tree moves.
+ROOT ?= .
+
+.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test \
+        install-hooks uninstall-hooks
 
 help: ## List targets
 	@echo "Targets for developing aixbdd-en (not for skill users):"
@@ -43,22 +49,53 @@ check-python: ## Verify the interpreter the scripts need
 	@echo "interpreter OK: $(RUN) ($(shell $(RUN) -c 'import sys; print("python " + sys.version.split()[0])'))"
 
 check-paths: check-python ## Invariants 1-3: specs/ roots, truth paths, plan-package prefix
-	@$(RUN) $(CHECKER) --only paths --quiet-candidates
+	@$(RUN) $(CHECKER) --root $(ROOT) --only paths --quiet-candidates
 
 check-tokens: check-python ## Invariant 4: fixed-token registry vs definitions and naming surfaces
-	@$(RUN) $(CHECKER) --only tokens --quiet-candidates
+	@$(RUN) $(CHECKER) --root $(ROOT) --only tokens --quiet-candidates
 
 check-refs: check-python ## Invariants 5-6: candidate report for normative refs and asserted gates
-	@$(RUN) $(CHECKER) --only refs
+	@$(RUN) $(CHECKER) --root $(ROOT) --only refs
 
 check-params: check-python ## STANDARDS §4.3: every Default Params cell conforms
-	@$(RUN) $(SCRIPTS)/check_dsl_default_params.py
+	@$(RUN) $(SCRIPTS)/check_dsl_default_params.py --root $(ROOT)
 
 check-audit: check-python ## DSL topology audit of this repo's own example tree
-	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(EXAMPLES)
+	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(ROOT)/$(EXAMPLES)
 
 check: check-paths check-tokens check-refs check-params check-audit ## Run everything (default gate)
 
 test: check-python ## Run the checkers' own test suites
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
+
+install-hooks: ## Symlink the tracked hook into .git/hooks, so the gate runs before every commit
+	@hooks_dir=$$(git rev-parse --git-path hooks); \
+	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
+	dest=$$hooks_dir/pre-commit; \
+	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
+		echo "already installed: $$dest"; \
+		exit 0; \
+	fi; \
+	if [ -e "$$dest" ]; then \
+		echo "refusing to overwrite an existing hook: $$dest" >&2; \
+		echo "Move it aside, or run 'git commit --no-verify' to skip the gate." >&2; \
+		exit 1; \
+	fi; \
+	mkdir -p "$$hooks_dir"; \
+	ln -s "$$target" "$$dest"; \
+	echo "installed: $$dest -> $$target"; \
+	echo "The gate now runs before every commit. Bypass with: git commit --no-verify"
+
+uninstall-hooks: ## Remove the hook symlink, leaving any other hooks untouched
+	@hooks_dir=$$(git rev-parse --git-path hooks); \
+	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
+	dest=$$hooks_dir/pre-commit; \
+	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
+		rm "$$dest"; \
+		echo "removed: $$dest"; \
+	elif [ -e "$$dest" ]; then \
+		echo "left alone: $$dest is not this repository's hook symlink" >&2; \
+	else \
+		echo "nothing to remove: no hook at $$dest"; \
+	fi
