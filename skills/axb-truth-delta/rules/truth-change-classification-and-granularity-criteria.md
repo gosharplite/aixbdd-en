@@ -36,8 +36,24 @@
 - `ADD` means adding a semantic unit that does not exist in current truth.
 - `MODIFY` means changing an existing truth semantic unit's fields, behavior, life cycle, verification conditions, output content, or test contract.
 - `DELETE` means removing an existing semantic unit from current truth, or explicitly declaring that an existing behavior no longer holds.
-- `NOOP` means the truth owner has inspected its responsible truth scope but no modification is needed this round.
-- Undefined actions such as `UPDATE`, `CHANGE`, `NEW`, `REMOVE` must not be used.
+- `NOOP` means **this truth area needs no change this round**, and the row's `Reason` must say which of
+  the two situations applies:
+  - *Inspected, nothing needed* — the truth owner read its scope and found it sufficient. The owner
+    records this itself, and the `Change Summary` states the scope it inspected.
+  - *Not applicable, by analysis decision* — no planner or owner applies to this round's plan at all, so
+    nothing was inspected because nothing exists to inspect. `/axb-system-analysis` records this on the
+    owner's behalf when it skips that planner (a plain line-oriented CLI has no API surface, so
+    `/axb-api-plan` is skipped), naming the owner and the decision in the `Reason`.
+- Both are `NOOP` because both mean the same thing downstream — this area contributes no task — while
+  the `Reason` keeps the audit trail honest about whether anyone actually looked. Do **not** record
+  "not applicable" as "inspected": a skipped owner never inspected anything, and writing that is a
+  false record.
+- A `NOOP` row must never be left as an unfilled placeholder. If nobody acted and no analysis decision
+  skipped the area, the row is missing, not `NOOP` — downstream coverage cannot tell an absent row from
+  an unfilled one, and both fail delivery.
+- Undefined actions such as `UPDATE`, `CHANGE`, `NEW`, `REMOVE` must not be used. Do not invent a
+  distinct `SKIPPED` action for the second situation: it would add a fifth value every consumer must
+  learn, to express a distinction the `Reason` column already carries.
 
 ## Good Example
 
@@ -48,6 +64,7 @@
 | --- | --- | --- | --- |
 | MODIFY | `specs/truth/contracts/openapi.yaml` -> `RoomSnapshot.messages` | Add `messages` to the room snapshot's required fields. | The frontend polls chat messages with the same snapshot. |
 | NOOP | `specs/truth/contracts/openapi.yaml` -> `GET /rooms/{roomId}` | Inspected the read entry; no new endpoint needed. | The existing snapshot entry suffices. |
+| NOOP | `specs/truth/contracts/openapi.yaml` -> (whole scope) | Not applicable this round: no API surface. | Plain line-oriented CLI; `/axb-api-plan` skipped by analysis decision. |
 ```
 
 ## Bad Example

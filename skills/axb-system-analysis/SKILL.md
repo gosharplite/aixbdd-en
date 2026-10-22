@@ -15,7 +15,7 @@ disable-model-invocation: true
 1. READ Read the user requirements, caller requests, the target plan package's `spec.md`, `research.md`, `truth-delta.md`, existing `plan.md`, `specs/truth/techstack.md`, and relevant `specs/truth/**`.
 2. READ Read `templates/plan.md` and `templates/plan.example.md` to confirm the fixed structure and finished look of `plan.md`.
 3. READ Read `.agents/constitution/CONSTITUTION.md`, `.agents/constitution/shared.md`, and `.agents/constitution/skills/axb-system-analysis/plan.md`.
-4. WRITE If the plan package has no `plan.md` parent layer yet, create the necessary directories; this skill does not create or modify `specs/truth/**`.
+4. WRITE If the plan package has no `plan.md` parent layer yet, create the necessary directories; this skill does not create or modify `specs/truth/**`. (It does record skip decisions in the plan package's `truth-delta.md` — see Phase 4 step 3 — which is a plan-side ledger, not truth.)
 
 ## Phase 2 -- Converge the system interface inventory and clarify strategy
 
@@ -26,11 +26,22 @@ disable-model-invocation: true
 ## Phase 3 -- Plan the analysis Waves and produce the plan
 
 1. READ When ordering and parallel grouping need judgment, read `rules/wave-dependency-ordering-and-parallel-grouping-criteria.md`.
-2. THINK Arrange Waves by interface dependency, truth-change risk, and parallelizability; confirm every interface has a clear downstream handover: API interfaces are taken over by `/axb-api-plan`, data interfaces by `/axb-data-plan`; frontend interfaces do NOT delegate to `/axb-ui-plan` and are instead taken over by reviewing the PM's existing `ui/**` artifacts; a CLI interface shipping an interactive TUI has its terminal UX surface (screens, keybindings, state transitions) already produced by the PM's `/axb-ui-plan` (terminal mode) and is handled like the frontend — review-only, no redo, no delegation; if it is a plain line-oriented CLI interface (no corresponding analysis planner, and the PM produced no ui-plan), hand off to its contract owner `/axb-dsl-refine` at delivery time.
+2. THINK Arrange Waves by interface dependency, truth-change risk, and parallelizability; confirm every interface has a clear downstream handover: API interfaces are taken over by `/axb-api-plan`, data interfaces by `/axb-data-plan`; frontend interfaces do NOT delegate to `/axb-ui-plan` and are instead taken over by reviewing the PM's existing `ui/**` artifacts; a CLI interface shipping an interactive TUI has its terminal UX surface (screens, keybindings, state transitions) already produced by the PM's `/axb-ui-plan` (terminal mode) and is handled like the frontend — review-only, no redo, no delegation; if it is a plain line-oriented CLI interface (no corresponding analysis planner, and the PM produced no ui-plan), hand off to its contract owner `/axb-dsl-refine` at delivery time. Whatever you skip by decision must be recorded — see Phase 4 step 3.
 3. WRITE Write the system interface inventory (with each interface's `Delegation` taker), the Waves with their analysis focus and `Delegation order`, and the delegation rationale into `specs/plans/NNN-<slug>/plan.md`. Every interface must carry exactly one taker and every Wave an order, because Phase 4 delegates strictly by them.
 
 ## Phase 4 -- Delegate planners and deliver
 
 1. READ When planner correspondence needs judgment, read `rules/analysis-interface-delegation-and-planner-mapping-criteria.md`.
 2. DELEGATE In Wave order, hand API interfaces to `/axb-api-plan` and data interfaces to `/axb-data-plan`; every handoff must include the plan package path, truth root, truth-delta path, interface name, and analysis focus. Frontend interfaces do NOT delegate to `/axb-ui-plan` (UI planning is already done by the PM): if the frontend is involved this time, only review the PM-delivered existing `ui/ui-plan.md` and prototypes, confirming implementability within current technical boundaries. A CLI interface shipping an interactive TUI is handled like the frontend, reviewing only its terminal-mode UI artifacts (`ui/ui-plan.md` and `ui/screens/*.txt`); a plain line-oriented CLI interface has no corresponding analysis planner and is not delegated in this phase — instead it is explicitly handed off at delivery to the next phase's contract owner `/axb-dsl-refine`.
-3. WRITE Report to the user `plan.md`, the number of system interfaces, the number of Waves, which planners were delegated to (including the CLI TUI interface reviewed like the frontend, and the plain line-oriented CLI interface handed to `/axb-dsl-refine`), and whether it can proceed to `/axb-dsl-refine` or `/axb-tasks`.
+3. DELEGATE Record every planner you skipped by decision. This skill decides which planners a round
+   does not need, so it — not the absent planner — is responsible for saying so in `truth-delta.md`.
+   For each skipped planner, hand `/axb-truth-delta` a `NOOP` row for that planner's owner section,
+   with the `Reason` stating that the owner was skipped by analysis decision and why (e.g. "Plain
+   line-oriented CLI; no API surface exists, so `/axb-api-plan` is skipped by analysis decision").
+   Do not write an "inspected, nothing needed" `NOOP` for a planner that never ran: nothing was
+   inspected, and that reason would be a false record. This skill still does not modify truth — it
+   only records the decision, exactly as Phase 1's "does not modify truth" boundary requires.
+4. WRITE Report to the user `plan.md`, the number of system interfaces, the number of Waves, which
+   planners were delegated to (including the CLI TUI interface reviewed like the frontend, and the
+   plain line-oriented CLI interface handed to `/axb-dsl-refine`), which planners were skipped by
+   decision and recorded as `NOOP`, and whether it can proceed to `/axb-dsl-refine` or `/axb-tasks`.

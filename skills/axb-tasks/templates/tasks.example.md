@@ -5,7 +5,7 @@
 
 ## Task Binding Contract
 
-- Every **development task** must correspond to an ADD / MODIFY / DELETE / NOOP semantic in `truth-delta.md`.
+- Every **development task** must correspond to an `ADD` / `MODIFY` / `DELETE` semantic in `truth-delta.md`. Never to a `NOOP`: a `NOOP` row contributes no task, whichever reason it carries (see the coverage sweep's NOOP exemption).
 - This round's `research.md` decided Decisions and `specs/truth/**` non-NOOP items must be fully covered in the tasks' `Read` or delivery targets, leaving no orphaned artifacts (Pre-Delivery Orphan Coverage Sweep).
 - Unobservable atomic effect claims (Atomic Effect Claims) derived from every normative item (FR / NFR / SC / EC) must be scheduled for `[WITNESS]` task coverage, or recorded as `accepted-unwitnessed` on the project decision surface; anything unwitnessed must never be promoted to truth surfaces in prose guarantee form (Claim→Witness Obligation).
 - When tasks have ordering dependencies, the ordering constraint must be explicitly declared with `Dependencies: T###`.

@@ -54,16 +54,22 @@ When developing a CLI application (no web frontend or HTTP/REST API), the workfl
    that ships a rich terminal UI (TUI) runs `/axb-ui-plan` in **terminal mode** — textual
    screens/keybindings under `ui/screens/*.txt`, still no HTML.
 2. **Lean `/axb-system-analysis`**:
-   - **`/axb-api-plan`** is skipped (standalone CLIs have no OpenAPI endpoints; marked as `NOOP` in
-     `truth-delta.md`).
+   - **`/axb-api-plan`** is skipped — a standalone CLI has no OpenAPI endpoints. Because
+     `/axb-system-analysis` is what decides to skip it, that skill records the skip: it delegates a
+     `NOOP` row to `/axb-truth-delta` for the `/axb-api-plan` owner section, with the `Reason` stating
+     that the planner was skipped by analysis decision. `NOOP` therefore covers both "inspected,
+     nothing needed" and "not applicable, by analysis decision"; the row's `Reason` distinguishes them,
+     and `axb-tasks`' coverage sweep skips both.
    - **`/axb-data-plan`** is conditional — invoked only if the CLI manages persistent configuration
      (e.g. `~/.config/...`), local storage (SQLite, JSON), or complex domain state. For stateless CLI
-     tools, it is skipped.
+     tools it is skipped, and that skip is recorded the same way as the one above: a `NOOP` row in the
+     `/axb-data-plan` section, reason "not applicable, by analysis decision".
 3. **CLI Contract via `/axb-dsl-refine`**: The CLI end is a first-class truth-tree interface — a
    third `InterfaceKind`, `cli`, alongside `backend`/`frontend`. The executable Gherkin feature files
    (`specs/truth/features/cli/**`) and their step definitions (`dsl.md`) serve as the formal CLI
    contract and acceptance test runner. Since no API/data/UI planner applies, `/axb-system-analysis`
-   records no planner for it and carries the CLI end forward to its contract owner `/axb-dsl-refine`.
+   records those skips as `NOOP` rows and carries the CLI end forward to its contract owner
+   `/axb-dsl-refine`.
 
 ### Resolving PR and Review Findings
 

@@ -3,6 +3,14 @@
 **Plan Package**: `specs/plans/{{PLAN_PACKAGE}}`
 **Truth Root**: `specs/truth`
 
+<!--
+  Every section needs at least one row; no row may be left as its placeholder at delivery.
+  A `NOOP` row's `Reason` must say which situation applies: "inspected, nothing needed" (the owner
+  read its scope and found it sufficient) or "not applicable, by analysis decision" (no planner or
+  owner applied this round, e.g. a plain CLI has no API surface, so axb-system-analysis skipped
+  axb-api-plan and records that here on the owner's behalf).
+-->
+
 ## /axb-technical-research
 
 | Action | Truth Spec | Change Summary | Reason |
