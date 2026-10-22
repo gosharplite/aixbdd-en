@@ -281,12 +281,19 @@ Supporting files:
 - `scripts/check_dsl_default_params.py` — executes `STANDARDS.md` §4.3 against the example tree's
   `Default Params` cells. Seeded from #19 and the seed for #24 item 5.
 - `scripts/check_ui_plan_outputs.py` — executes "no reference to a frame or page the plan does not
-  declare" against both `ui-plan` examples: every `Corresponding … file:` line, every `Keybinding
-  Map` target frame and every `State Transition List` endpoint must appear on its own plan's
-  `Planned output files:` line. Built from #24 item 3, whose two historical instances (#14) were
-  contradictions of exactly that kind. Prose endpoints that name a state rather than a file are
-  counted and printed, not failed — they are not machine-resolvable, and a check that fails on
-  what it cannot triage gets deleted.
+  declare" against both `ui-plan` examples: every labelled screen line (`Corresponding … file:`,
+  `Entry frame:`, `Multi-page entry:`), every `Keybinding Map` target frame and every `State
+  Transition List` endpoint must appear on its own plan's `Planned output files:` line. Built from
+  #24 item 3, whose two historical instances (#14) were contradictions of exactly that kind.
+  Prose endpoints that name a state rather than a file are counted and printed, not failed — they
+  are not machine-resolvable, and a check that fails on what it cannot triage gets deleted.
+  Two structural rules, from the review of #28: **one fence mask**, because fenced content is
+  documentation *about* the format (a quoted `Planned output files:` line made a filled plan look
+  like a template; a fenced `Corresponding frame file:` example became a false failure); and **one
+  classifying pass**, because two hand-synchronised parsers let an item vanish from the verdict
+  *and* from the printed gap. The output prints `seen = checked + prose`, and `main()` fails when
+  it audited no plans — `make check` runs it, `make test` does not, so a commit-time gate that
+  judged nothing would otherwise pass every commit.
 - `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),
   `pre-commit-stub` (installed into `.git/hooks`, branch-independent, fails closed) and
   `classify-hook` (the single definition of which hook is ours).
@@ -297,7 +304,9 @@ Supporting files:
 - `scripts/test_check_invariants.py`, `scripts/test_check_dsl_default_params.py`,
   `scripts/test_check_ui_plan_outputs.py` — prove each check against **its own historical escape**
   rather than only against a clean tree. The `ui-plan` suite also pins the tree's reference count,
-  so a glob that stops matching fails the suite instead of quietly checking nothing.
+  the skipped set and the prose count, and asserts `checked + prose == seen` over the shipped tree,
+  so a glob that stops matching or a parser that drops an item fails the suite instead of quietly
+  checking nothing.
 
 The rationale, the twelve failure modes these checks exist for, and the defect each would have
 caught are recorded in [#12](https://github.com/gosharplite/aixbdd-en/issues/12).

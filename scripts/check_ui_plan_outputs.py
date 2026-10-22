@@ -22,12 +22,34 @@ defect behind it, and mixing the two would let a failure name either end.
 ## What is read
 
 - **Declarations**: the backticked paths on a plan's `Planned output files:` line.
-- **References**: the two labelled screen lines (`Corresponding prototype file:` /
-  `Corresponding frame file:`), the `Target Frame` column of a `Keybinding Map`, and the
-  endpoints of every transition in a `State Transition List`.
+- **References**: the labelled screen lines (`Corresponding prototype file:` /
+  `Corresponding frame file:` / `Entry frame:` / `Multi-page entry:`), the `Target Frame`
+  column of a `Keybinding Map`, and every endpoint of a `State Transition List`.
 
-A plan whose `Planned output files:` line still carries a `{{PLACEHOLDER}}` (i.e. a
-template, not a filled plan) cannot be audited and is skipped — see "Exemptions" below.
+## Two structural rules this file is built on
+
+Review of #28 found that all of its escapes began in one of two places, so both are
+structural here rather than fixed case by case.
+
+**One fence mask, applied before any line scan.** Fenced content is documentation *about*
+the format, not the format: a plan quoting the template's `Planned output files:` line in a
+code block is illustrating, and a fenced `Corresponding frame file:` line is not a
+reference. The first version masked fences in one scanner out of three, so a fenced quote
+above the real declaration classified a filled plan as a template and skipped it whole,
+while a fenced example below it became a false failure. `visible()` is the only way any
+scanner sees a line, so a new scanner cannot forget.
+
+**One pass, two ledgers that sum to it.** `observations()` classifies every reference site
+exactly once as either *resolvable* (checked against the declaration) or *prose* (names a
+state, not a file). The first version had two hand-synchronised parsers, and anything one
+dropped the other did not count — an empty-key continuation row, a backticked target
+containing a space, and the prose tail of a half-resolvable transition line all vanished
+from the verdict *and* from the printed gap. Now `checked + prose == seen` holds by
+construction, and the gate prints all three numbers, so a drop shows up in the output
+rather than only in its absence.
+
+The rule behind both: **every item a scanner drops must land in a ledger the output
+prints.** Dropped-but-unprinted is how every escape in #28's review began.
 
 ## What is deliberately not read
 
@@ -38,31 +60,23 @@ template, not a filled plan) cannot be audited and is skipped — see "Exemption
   would report zero violations whether or not a target was declared. The half that can be
   decided from the tree — a plan contradicting its own declaration — is the half built
   here; the link-target half becomes buildable when a fixture exists whose prototype
-  filenames are the declared ones.
-- **Prose endpoints.** `Target Frame` may legitimately name a *state* rather than a file
-  ("the frame the overlay was opened from" is a modal overlay's correct description), and
-  a `State Transition List` line may state that no transition happens. Neither is
-  machine-resolvable, and failing on them would delete the check. They are counted and
-  printed instead, so the coverage gap is visible rather than silent.
+  filenames are the declared ones. Printed with the verdict, not only recorded here.
+
+Nothing else is silently out of scope: an unreadable plan is recorded as skipped with its
+error, and a plan skipped as a template says so.
 
 ## Exemptions
 
-This module's review on #27 established the rule this file is held to: **every exemption
-is staleness-guarded, and none is expressible as a byte radius.** There are two, and
-neither is a window:
+This module is held to the rule #27 established: **every exemption is staleness-guarded,
+and none is expressible as a byte radius.** Two, neither a window:
 
-1. **A template whose declared line carries a placeholder.** The condition is read from
-   the declaration line *itself*, not from the file: earlier this check searched the whole
-   document, which silently skipped any filled plan that kept one leftover `{{…}}` in
-   unrelated scaffolding — the exemption quietly widening, which is the failure it was
-   supposed to prevent. It is not an `invariant_allowlist.json` entry because a hard-coded
-   path list would go stale in the *noisy* direction (a renamed or newly added template
-   reports false failures). Content-derived plus test-pinned is the stronger guard, and
-   `RealTreeTests` asserts the exact skipped set so a skip cannot widen unnoticed.
-2. **Prose endpoints** (`the frame the overlay was opened from`) are not exempted from the
-   audit so much as excluded from what is auditable; they name a state, not a file. They
-   are counted and printed, and the count is pinned in the tests, so the gap is measured
-   rather than assumed.
+1. **A template whose declaration line carries a placeholder**, tested on that line alone
+   (and on its fenced-visible version). It is not an `invariant_allowlist.json` entry
+   because a hard-coded path list goes stale in the *noisy* direction (a renamed or added
+   template reports false failures); content-derived plus a test-pinned skipped set is the
+   stronger guard.
+2. **Prose reference sites** are not exempted so much as classified: they name a state, not
+   a file. They are counted, printed, and pinned in the tests.
 
 Scope is repo-internal tooling for maintainers, like `check_invariants.py` and
 `check_dsl_default_params.py` — a user's project has its own plan to declare its own
@@ -84,11 +98,20 @@ DECLARED_RE = re.compile(r"^\s*-\s*Planned output files:\s*(.*)$")
 CORRESPONDING_RE = re.compile(
     r"^\s*-\s*Corresponding (?:prototype|frame) file:\s*`([^`]+)`\s*$"
 )
+# `Entry frame:` names one frame outright; `Multi-page entry:` wraps it in a sentence
+# ("fixedly use ui/index.html as the prototype entry page"), so its value is scanned for a
+# path rather than taken whole. These are the highest-value single references in a plan —
+# they say where a reviewer starts — and the first version of this check read neither.
+ENTRY_LINE_RE = re.compile(r"^\s*-\s*(?:Entry frame|Multi-page entry):\s*(.*)$")
 HEADING_RE = re.compile(r"^(#{2,3})\s+(.+?)\s*$")
 BACKTICK_RE = re.compile(r"`([^`\n]+)`")
+# A path-shaped token: at least one `/` and a file extension. Used only inside a labelled
+# value, so it cannot run wild over the document.
+PATH_TOKEN_RE = re.compile(r"[A-Za-z0-9_.\-]+(?:/[A-Za-z0-9_.\-]+)+\.[A-Za-z0-9]{1,5}\b")
 # `10-suggestion.txt` is ordered by its prefix; `entry.txt` is not. The prefix is
-# rendering order, not identity, so it is stripped on both sides of a comparison.
-ORDER_PREFIX_RE = re.compile(r"^\d+-")
+# rendering order *and* identity — two files can share a stem — so it is compared, not
+# discarded.
+ORDER_PREFIX_RE = re.compile(r"^(\d+)-(.*)$")
 PLACEHOLDER_RE = re.compile(r"\{\{[^}]*\}\}")
 # A transition endpoint sits at the head of a segment: `entry` --key--> `suggestion`.
 TRANSITION_HEAD_RE = re.compile(r"^\s*(?:\d+\.)?\s*`([^`]+)`")
@@ -103,74 +126,70 @@ class Violation:
 
 
 @dataclass
+class Observation:
+    """One reference site, classified. Exactly one of the two ledgers takes it."""
+
+    line: int
+    text: str
+    resolvable: bool
+
+
+@dataclass
 class Report:
     plans: list[Path] = field(default_factory=list)
-    skipped: list[Path] = field(default_factory=list)
+    skipped: list[tuple[Path, str]] = field(default_factory=list)
     declared: int = 0
-    references: int = 0
-    prose: int = 0
+    observations: list[Observation] = field(default_factory=list)
     violations: list[Violation] = field(default_factory=list)
+
+    @property
+    def checked(self) -> int:
+        return sum(1 for o in self.observations if o.resolvable)
+
+    @property
+    def prose(self) -> int:
+        return sum(1 for o in self.observations if not o.resolvable)
 
 
 def split_row(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def section_body(lines: list[str], heading_prefix: str) -> list[tuple[int, str]]:
-    """The (1-based line number, text) pairs of the section headed by `heading_prefix`.
+def fenced_line_mask(lines: list[str]) -> list[bool]:
+    """Mark lines inside (or delimiting) a fenced code block.
 
-    Fenced blocks are skipped for heading detection, so a defining section that gains a
-    fenced example containing a `## ...` line cannot be truncated by it.
+    This repository writes markdown about markdown, so a plan may quote the format it is
+    written in. Fenced content is illustration, not content — see the module docstring.
     """
-    fenced: list[bool] = []
+    mask: list[bool] = []
     inside = False
     for line in lines:
         stripped = line.strip()
         if stripped.startswith(("```", "~~~")):
-            fenced.append(True)
+            mask.append(True)
             inside = not inside
             continue
-        fenced.append(inside)
-
-    start = None
-    start_level = None
-    for index, line in enumerate(lines):
-        if fenced[index]:
-            continue
-        match = HEADING_RE.match(line)
-        if not match:
-            continue
-        if start is None:
-            if match.group(2).startswith(heading_prefix):
-                start = index + 1
-                start_level = len(match.group(1))
-            continue
-        if len(match.group(1)) <= start_level:
-            return [(n, lines[n - 1]) for n in range(start + 1, index + 1)]
-    if start is None:
-        return []
-    return [(n, lines[n - 1]) for n in range(start + 1, len(lines) + 1)]
+        mask.append(inside)
+    return mask
 
 
-def stem_of(token: str) -> str:
-    """`ui/screens/10-suggestion.txt` -> `suggestion`; `ui/index.html` -> `index`."""
-    name = token.strip().rsplit("/", 1)[-1]
-    if "." in name:
-        name = name.rsplit(".", 1)[0]
-    return ORDER_PREFIX_RE.sub("", name)
+def visible(lines: list[str]) -> list[tuple[int, str]]:
+    """Every (1-based line number, text) pair outside a fence.
 
-
-def is_declared(reference: str, declared: list[str]) -> bool:
-    """A path reference must match exactly; a bare frame name matches by ordered stem."""
-    if "/" in reference:
-        return reference in declared
-    wanted = stem_of(reference)
-    return any(stem_of(entry) == wanted for entry in declared)
+    The single entry point for line scanning. A scanner that iterates `lines` directly is
+    the bug this function exists to make unwritable.
+    """
+    mask = fenced_line_mask(lines)
+    return [
+        (number, line)
+        for number, (line, fenced) in enumerate(zip(lines, mask), start=1)
+        if not fenced
+    ]
 
 
 def declared_line(lines: list[str]) -> str | None:
-    """The raw text after `Planned output files:`, or None when the line is absent."""
-    for line in lines:
+    """The raw text after the first *visible* `Planned output files:`, if any."""
+    for _number, line in visible(lines):
         match = DECLARED_RE.match(line)
         if match:
             return match.group(1)
@@ -183,14 +202,98 @@ def declared_outputs(raw: str | None) -> list[str]:
     return [token.strip() for token in BACKTICK_RE.findall(raw)]
 
 
-def references_of(lines: list[str]) -> list[tuple[int, str]]:
-    """Every machine-resolvable frame/page reference, as (line number, reference)."""
-    found: list[tuple[int, str]] = []
+def section_body(lines: list[str], heading_prefix: str) -> list[tuple[int, str]]:
+    """The visible (line number, text) pairs of the section headed by `heading_prefix`."""
+    rows = visible(lines)
+    start = None
+    start_level = None
+    for index, (_number, line) in enumerate(rows):
+        match = HEADING_RE.match(line)
+        if not match:
+            continue
+        if start is None:
+            if match.group(2).startswith(heading_prefix):
+                start = index + 1
+                start_level = len(match.group(1))
+            continue
+        if len(match.group(1)) <= start_level:
+            return rows[start:index]
+    if start is None:
+        return []
+    return rows[start:]
 
-    for number, line in enumerate(lines, start=1):
-        match = CORRESPONDING_RE.match(line)
+
+def name_parts(token: str) -> tuple[str | None, str, str]:
+    """Split a frame reference into (order prefix, stem, extension).
+
+    `ui/screens/10-suggestion.txt` -> ("10", "suggestion", ".txt")
+    `suggestion`                   -> (None, "suggestion", "")
+    """
+    name = token.strip().rsplit("/", 1)[-1]
+    stem, dot, extension = name.partition(".")
+    match = ORDER_PREFIX_RE.match(stem)
+    if match:
+        return match.group(1), match.group(2), (dot + extension)
+    return None, stem, (dot + extension)
+
+
+def is_declared(reference: str, declared: list[str]) -> bool:
+    """Does `reference` name one of `declared`?
+
+    A path reference must match a declared entry exactly. A bare name is matched by stem,
+    because plans refer to `10-suggestion.txt` as `suggestion` — but only the *prefix* is
+    optional: a reference that states a prefix, or an extension, must state the same one
+    the declaration does. Discarding both sides' prefixes and extensions (the first
+    version of this function) let `20-suggestion` match `10-suggestion.txt` and
+    `suggestion.html` match `suggestion.txt` — same stem, different file, and renumbering
+    is exactly the edit a ui plan undergoes.
+    """
+    if "/" in reference:
+        return reference in declared
+    ref_prefix, ref_stem, ref_extension = name_parts(reference)
+    for entry in declared:
+        entry_prefix, entry_stem, entry_extension = name_parts(entry)
+        if ref_stem != entry_stem:
+            continue
+        if ref_prefix is not None and ref_prefix != entry_prefix:
+            continue
+        if ref_extension and entry_extension and ref_extension != entry_extension:
+            continue
+        return True
+    return False
+
+
+def labelled_values(
+    rows: list[tuple[int, str]], pattern: re.Pattern[str]
+) -> list[tuple[int, str]]:
+    found = []
+    for number, line in rows:
+        match = pattern.match(line)
         if match:
             found.append((number, match.group(1).strip()))
+    return found
+
+
+def observations(lines: list[str]) -> list[Observation]:
+    """Classify every reference site exactly once.
+
+    One pass, two ledgers. `resolvable` sites are checked against the declaration; the rest
+    are prose. Nothing is dropped: a site is either in the checked ledger or in the prose
+    ledger, so the printed totals cannot disagree with what was seen.
+    """
+    found: list[Observation] = []
+    rows = visible(lines)
+
+    for number, value in labelled_values(rows, CORRESPONDING_RE):
+        found.append(Observation(number, value, True))
+
+    for number, value in labelled_values(rows, ENTRY_LINE_RE):
+        spans = BACKTICK_RE.findall(value) or [value]
+        paths = [path for span in spans for path in PATH_TOKEN_RE.findall(span)]
+        if paths:
+            found.extend(Observation(number, path, True) for path in paths)
+        elif value:
+            found.append(Observation(number, value, False))
 
     for number, line in section_body(lines, "Keybinding Map"):
         if not line.strip().startswith("|"):
@@ -199,13 +302,19 @@ def references_of(lines: list[str]) -> list[tuple[int, str]]:
         if len(cells) < 3:
             continue
         key_cell, target = cells[0], cells[2]
-        if key_cell == "Key" or set(key_cell) <= set("-: "):
+        # Skip the header row and the `--- | ---` separator. An *empty* key cell is a
+        # continuation row ("same key, second effect") and carries a real target: the first
+        # version tested `set(key_cell) <= set("-: ")`, and the empty set is a subset of
+        # every set, so those rows vanished from both ledgers.
+        if key_cell == "Key" or (key_cell and set(key_cell) <= set("-: ")):
             continue
-        for span in BACKTICK_RE.findall(target):
-            span = span.strip()
-            if " " in span:
-                continue
-            found.append((number, span))
+        spans = [span.strip() for span in BACKTICK_RE.findall(target)]
+        resolvable = [span for span in spans if span and not any(c.isspace() for c in span)]
+        if resolvable:
+            found.extend(Observation(number, span, True) for span in resolvable)
+            continue
+        if target:
+            found.append(Observation(number, target, False))
 
     for number, line in section_body(lines, "State Transition List"):
         if "-->" not in line:
@@ -213,51 +322,32 @@ def references_of(lines: list[str]) -> list[tuple[int, str]]:
         for segment in line.split("-->"):
             match = TRANSITION_HEAD_RE.match(segment)
             if match:
-                found.append((number, match.group(1).strip()))
+                found.append(Observation(number, match.group(1).strip(), True))
+            elif segment.strip():
+                found.append(Observation(number, segment.strip(), False))
 
     return found
-
-
-def prose_count(lines: list[str]) -> int:
-    """References that name a state in prose — real, but not machine-resolvable."""
-    count = 0
-    for _number, line in section_body(lines, "Keybinding Map"):
-        if not line.strip().startswith("|"):
-            continue
-        cells = split_row(line)
-        if len(cells) < 3 or cells[0] == "Key" or set(cells[0]) <= set("-: "):
-            continue
-        if cells[2] and not BACKTICK_RE.search(cells[2]):
-            count += 1
-    for _number, line in section_body(lines, "State Transition List"):
-        if "-->" in line and not any(
-            TRANSITION_HEAD_RE.match(segment) for segment in line.split("-->")
-        ):
-            count += 1
-    return count
 
 
 def audit(plan: Path, lines: list[str], declared: list[str], report: Report) -> None:
     report.plans.append(plan)
     report.declared += len(declared)
 
-    for number, reference in references_of(lines):
-        report.references += 1
-        if is_declared(reference, declared):
+    for observation in observations(lines):
+        report.observations.append(observation)
+        if not observation.resolvable or is_declared(observation.text, declared):
             continue
         report.violations.append(
             Violation(
                 path=plan,
-                line=number,
-                reference=reference,
+                line=observation.line,
+                reference=observation.text,
                 detail=(
-                    f"`{reference}` is not on this plan's `Planned output files:` line "
+                    f"`{observation.text}` is not on this plan's `Planned output files:` line "
                     f"({', '.join(f'`{d}`' for d in declared) or 'none declared'})"
                 ),
             )
         )
-
-    report.prose += prose_count(lines)
 
 
 def run(root: Path) -> Report:
@@ -265,18 +355,26 @@ def run(root: Path) -> Report:
     for plan in sorted(root.glob(PLAN_GLOB)):
         try:
             lines = plan.read_text(encoding="utf-8").splitlines()
-        except (OSError, UnicodeError):
+        except (OSError, UnicodeError) as error:
+            # A plan that cannot be read is a gap in the audit, so it is recorded. The first
+            # version dropped it silently while the template skip two lines below was
+            # recorded and printed — an unreadable plan should not be quieter than a
+            # deliberately skipped one.
+            report.skipped.append((plan, f"unreadable ({error.__class__.__name__})"))
             continue
         raw = declared_line(lines)
-        # A template's *declaration line* is a placeholder: there is nothing to resolve
-        # against. The test is on that line alone — searching the whole document would
-        # skip any real plan that kept a leftover `{{…}}` elsewhere, which is an exemption
-        # silently widening rather than a template being recognized.
         if raw is not None and PLACEHOLDER_RE.search(raw):
-            report.skipped.append(plan)
+            report.skipped.append((plan, "template — the declaration line is a placeholder"))
             continue
         audit(plan, lines, declared_outputs(raw), report)
     return report
+
+
+def relative(path: Path, root: Path) -> str:
+    try:
+        return str(path.relative_to(root))
+    except ValueError:
+        return str(path)
 
 
 def main() -> int:
@@ -296,18 +394,12 @@ def main() -> int:
 
     print(f"UI plan declared-output conformance (#24 item 3): {root}")
     print(f"Plans audited: {len(report.plans)}")
-    for skipped in report.skipped:
-        try:
-            where = skipped.relative_to(root)
-        except ValueError:
-            where = skipped
-        print(f"  skipped (declaration line is a placeholder, so a template): {where}")
+    for path, reason in report.skipped:
+        print(f"  skipped ({reason}): {relative(path, root)}")
     print(f"Declared output files: {report.declared}")
-    print(f"References checked: {report.references}")
-    if report.prose:
-        print(
-            f"Prose references, not machine-resolvable and therefore not counted: {report.prose}"
-        )
+    print(f"Reference sites seen: {len(report.observations)}")
+    print(f"  checked against the declaration: {report.checked}")
+    print(f"  prose (names a state, not a file): {report.prose}")
     # Silence about an unchecked dimension reads as coverage. State it here, where the
     # PASS/FAIL verdict is printed, not only in the docstring nobody re-reads.
     print("Not checked: prototype link targets — no filename mapping exists between the")
@@ -316,12 +408,23 @@ def main() -> int:
     if report.violations:
         print(f"\nViolations ({len(report.violations)}):")
         for violation in report.violations:
-            try:
-                where = violation.path.relative_to(root)
-            except ValueError:
-                where = violation.path
-            print(f"  {where}:{violation.line}: {violation.detail}")
+            print(f"  {relative(violation.path, root)}:{violation.line}: {violation.detail}")
         print(f"\nResult: FAILED ({len(report.violations)} reference(s))")
+        return 1
+
+    # The vacuity guard belongs here, not only in the test suite: `make check` runs this
+    # script, `make test` does not, so a commit-time gate that audits nothing would pass
+    # every commit. Renaming the templates directory, or a whole-plan skip, is enough to
+    # reach this — the suite's own comment argued "fail rather than pass over nothing", and
+    # this is the layer where that has to be true.
+    if not report.plans:
+        print("\nResult: FAILED (no plans audited — the gate judged nothing)")
+        return 1
+    if not report.observations:
+        print(
+            "\nResult: FAILED (plans audited but no reference sites seen — "
+            "the parser is not reading them)"
+        )
         return 1
 
     print("\nResult: PASSED")
