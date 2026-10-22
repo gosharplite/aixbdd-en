@@ -76,7 +76,7 @@ Scan method:
   - FR / NFR attribution, requirement correctness, or spec consistency
   - Formal acceptance scenarios, success criteria, or ready judgment
   - Key entities, data constraints, state transitions, or external dependencies
-  - Key decisions that would make `/plan`, follow-up research, or design head in visibly different directions
+  - Key decisions that would make `/axb-spec-by-example`, follow-up research, or design head in visibly different directions
 - If a gap only affects naming preferences, microcopy, local interaction wording, or low-risk details for which defaults can be safely adopted at planning or implementation time, keep it in the spec's assumptions, `NEEDS CLARIFICATION`, or deferred risks — do not escalate it to this round's questions.
 - If a gap is already explicitly stated in the spec as deliberately deferred, not included in the first version, or carried by another skill, do not escalate it into a duplicate question.
 
@@ -109,7 +109,7 @@ Judgment:
 
 - Level: `MUST`
 - After creating candidate questions, they must be ordered by a combined `Impact × Uncertainty` judgment, not by the order they appear in the spec or whichever gap is seen first.
-- `Impact` should first consider its surface of effect on spec correctness, cross-section consistency, formal acceptance, data model, NFR commitments, and downstream `/plan`.
+- `Impact` should first consider its surface of effect on spec correctness, cross-section consistency, formal acceptance, data model, NFR commitments, and the downstream planning phase (`/axb-technical-research` and `/axb-system-analysis`) — a gap that redirects system analysis is high-impact even when it would not change Gherkin wording.
 - `Uncertainty` should consider whether the current spec admits multiple reasonable interpretations, whether they contradict each other, and whether a unique derivable answer is missing.
 - When delegating to `/axb-clarify` in a single round, carry at most 1 to 3 questions; the entire clarify session must accumulate no more than 5 questions.
 - If there are more than 3 high-impact gaps, first keep the top 1 to 3 by ranking, and list the rest as deferred high-risk gaps in the completion report; do not dump all questions at once.

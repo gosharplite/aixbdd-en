@@ -1,4 +1,4 @@
-# Phase 0 Tech Stack Summary: {{TECHSTACK_TOPIC}}
+# Tech Stack Summary: {{TECHSTACK_TOPIC}}
 
 ## Tech Stack Overview
 

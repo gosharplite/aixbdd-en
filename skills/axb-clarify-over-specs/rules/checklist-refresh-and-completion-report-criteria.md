@@ -34,12 +34,12 @@ Processing:
 # Rule 2 - The ready judgment must consider the checklist and the remaining high-impact gaps together
 
 - Level: `MUST`
-- When judging whether `/plan` can proceed, do not look only at whether the spec has been updated, nor only at part of the checklist's checked state; the following must be evaluated together:
+- When judging whether `/axb-spec-by-example` can proceed, do not look only at whether the spec has been updated, nor only at part of the checklist's checked state; the following must be evaluated together:
   - Are there still unresolved high-impact requirement gaps?
   - Would these gaps change formal acceptance, data boundaries, NFR commitments, or the planning direction?
   - Does the checklist still have failing items corresponding to the above high-impact gaps?
 - If high-impact gaps remain that would change the downstream planning direction, judge it as not yet ready, even if the rest of the spec is largely complete.
-- If the remaining failing items are only low-risk deferred details that will not overturn downstream planning, readiness for `/plan` may still be granted after explicitly stating the risk in the completion report.
+- If the remaining failing items are only low-risk deferred details that will not overturn downstream planning, readiness for `/axb-spec-by-example` may still be granted after explicitly stating the risk in the completion report.
 
 ## Good Example
 
@@ -65,7 +65,7 @@ Observations:
 - Two more checklist items are checked
 
 Judgment:
-- Proceed directly to `/plan`
+- Proceed directly to `/axb-spec-by-example`
 ```
 
 # Rule 3 - The completion report must fully account for this round's clarification effects and residual risks
@@ -77,7 +77,7 @@ Judgment:
   - Which sections were updated
   - Checklist before / after status, or that there is no checklist to refresh
   - Which high-impact gaps are resolved, which remain deferred or outstanding
-  - Whether it is ready, and whether the recommended next step is `/plan` or running `/axb-clarify-over-specs` again later
+  - Whether it is ready, and whether the recommended next step is `/axb-spec-by-example` or running `/axb-clarify-over-specs` again later
 - The point of the completion report is to let both the user and follow-up skills know: which risks were cleared this round, and what remains that must not be pretended away.
 - If `/axb-clarify` was not entered this round, also explain why, e.g. all high-impact gaps are clear, or only low-risk deferred details remain.
 
@@ -110,7 +110,7 @@ Completion report:
 
 - Level: `SHOULD`
 - If `CHECKLIST_FILE` does not exist, the completion report should explicitly state that no checklist was refreshed this round, rather than letting the user mistakenly believe complete verification was done.
-- If high-impact gaps were deliberately deferred, the completion report should explain the defer reason and its impact on downstream `/plan`, not just write a vague "there are still some issues to confirm".
+- If high-impact gaps were deliberately deferred, the completion report should explain the defer reason and its impact on downstream planning (`/axb-spec-by-example` for the Gherkin it enables, and `/axb-technical-research` / `/axb-system-analysis` for the design decisions it defers), not just write a vague "there are still some issues to confirm".
 - If no questions are needed at all this round, the completion report should also state that it is because all high-impact gaps are `Clear`, rather than omitting the clarification strategy judgment.
 
 ## Good Example
@@ -120,7 +120,7 @@ Completion report:
 ```md
 Report:
 - checklist: no corresponding file this round, so not refreshed
-- deferred: whether third-party notification channels are included in the first version; low impact, kept for `/plan`
+- deferred: whether third-party notification channels are included in the first version; low impact, kept for the downstream planning phase (`/axb-technical-research`, `/axb-system-analysis`)
 ```
 
 ## Bad Example

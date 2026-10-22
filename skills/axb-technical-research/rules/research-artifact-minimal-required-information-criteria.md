@@ -93,7 +93,7 @@ Content:
 - Level: `SHOULD`
 - If a decision still relies on unverified capacity, performance, compatibility, or operational assumptions, state them explicitly in `research.md`'s `Rationale`, or list them as follow-up spike / verification items at delivery.
 - Do not write unmeasured numbers, unconfirmed boundaries, or speculative constraints directly as decided facts.
-- This lets downstream `/plan-with-class-diagram` or the implementation stage clearly take over the remaining risks.
+- This lets downstream `/axb-system-analysis` or the implementation stage clearly take over the remaining risks.
 
 ## Good Example
 

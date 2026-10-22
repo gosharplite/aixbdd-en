@@ -1,6 +1,6 @@
 # Truth Delta: {{PLAN_ID}}
 
-**Plan Package**: `{{PLAN_PACKAGE}}`
+**Plan Package**: `specs/plans/{{PLAN_PACKAGE}}`
 **Truth Root**: `specs/truth`
 
 ## /axb-technical-research

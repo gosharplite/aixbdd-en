@@ -24,7 +24,7 @@
 - Status summary: 12/16 -> 15/16
 - Newly passing: `Remaining NEEDS CLARIFICATION items have been marked whether they block downstream planning`, `Success criteria are measurable, verifiable, and technology-neutral`, `Requirements, edge cases, key entities, and success criteria are consistent with each other`
 - New regressions: None
-- Still failing / N/A: `Room disposal after the match ends is deliberately deferred, not blocking /plan for now`
+- Still failing / N/A: `Room disposal after the match ends is deliberately deferred, not blocking /axb-spec-by-example for now`
 
 ## Deferred / Outstanding Risks
 
@@ -34,8 +34,8 @@
 ## Ready Judgment
 
 - Ready: Yes
-- Reason: The remaining undecided items will not change the current story splitting, formal acceptance criteria, or the main direction of `/plan`.
+- Reason: The remaining undecided items will not change the current story splitting, formal acceptance criteria, or the main direction of downstream planning.
 
 ## Recommended Next Step
 
-- `/plan`: The current spec is sufficient to enter downstream planning and design breakdown.
+- `/axb-spec-by-example`: The current spec is sufficient to write the acceptance Gherkin.

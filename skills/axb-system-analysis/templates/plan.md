@@ -4,23 +4,39 @@
 
 ### Document Structure (this feature)
 
-<!--
-  ⚠️ The package contents below predate the current layout — see #2.
-  Correct package root: `specs/plans/{{FEATURE_BRANCH}}/`.
-  Required contents (`spec.md`, `truth-delta.md`, `checklists/`, `features/acceptance/**`, `ui/**`)
-  are owned by axb-specify/axb-ui-plan; `contracts/` and data models live under `specs/truth/**`.
--->
-
 ```text
-specs/plans/{{FEATURE_BRANCH}}/
-├── plan.md
-├── {{ARTIFACT_FILE_1}}
-├── {{ARTIFACT_FILE_2}}
-├── {{ARTIFACT_FILE_3}}
-├── contracts/
-│   └── {{CONTRACT_FILE_NAME}}
-└── tasks.md
+specs/plans/{{PLAN_PACKAGE}}/
+├── spec.md                      # /axb-specify
+├── checklists/
+│   └── requirements.md          # /axb-specify
+├── truth-delta.md               # /axb-specify initializes; /axb-truth-delta maintains
+├── features/
+│   └── acceptance/
+│       └── *.feature            # /axb-spec-by-example
+├── ui/                          # /axb-ui-plan; absent for a plain line-oriented CLI
+│   ├── ui-plan.md
+│   ├── *.html                   # HTML mode (web / frontend)
+│   └── screens/                 # terminal mode (CLI with a TUI), instead of *.html
+│       ├── entry.txt
+│       └── NN-<name>.txt
+├── research.md                  # /axb-technical-research
+├── plan.md                      # /axb-system-analysis (this file)
+└── tasks.md                     # /axb-tasks
 ```
+
+**Truth this feature maintains**: {{TRUTH_ARTIFACTS_PARAGRAPH}}
+
+<!--
+  Fill {{TRUTH_ARTIFACTS_PARAGRAPH}} with the concrete `specs/truth/**` artifacts this feature adds
+  or changes, grouped by owner (contracts, data, techstack, features/DSL). This is the mapping
+  `/axb-tasks` consumes when it builds the truth-impact inventory, so it must name paths, not
+  categories.
+
+  The package holds only plan-side artifacts. Truth is not package-local: API contracts live in
+  `specs/truth/contracts/**`, data models in `specs/truth/data/**`, the stack in
+  `specs/truth/techstack.md`, and executable interface features + DSL in `specs/truth/features/**`.
+  Do not create a package-local `contracts/` or `data-model.md`; those layouts predate this design.
+-->
 
 ### Source Structure (repository root)
 

@@ -1,4 +1,4 @@
-# Phase 0 Tech Stack Summary: Photo Date-Album Organization
+# Tech Stack Summary: Photo Date-Album Organization
 
 ## Tech Stack Overview
 

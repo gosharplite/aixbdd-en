@@ -3,7 +3,7 @@
 ## Session
 
 - Interview topic: First-version requirement clarification for an internal company leave request system
-- Caller: `/plan-with-class-diagram`
+- Caller: `/axb-clarify-over-specs`
 - Detailed Q&A logging required: Yes
 
 ## Round 1 Answers

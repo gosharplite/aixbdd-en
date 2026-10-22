@@ -35,7 +35,7 @@ interview the user first — do not fill in the blanks yourself.
 ## Phase 4 -- Deliver and hand off follow-ups
 
 1. WRITE Report to the user the constitution files added or modified in this round, the rules added or adjusted in each file, whether `/axb-clarify` was conducted, and which requirements were deliberately deferred to future skills or artifacts.
-2. WRITE If a skill still needs to be wired into the constitution reading flow afterwards, state explicitly that follow-up should continue via `/skill-engineering` or the corresponding skill's edit process — do not automatically expand implementation within this skill.
+2. WRITE If a skill still needs to be wired into the constitution reading flow afterwards, state explicitly that follow-up should continue via the corresponding skill's edit process — do not automatically expand implementation within this skill.
 
 ## Additional Resources
 

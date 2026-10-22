@@ -100,7 +100,7 @@ Delegation order:
 
 ## Good Example
 
-- This example is good because it merges two same-wave interfaces that both belong to the backend contract and hands them to one planner, producing the same `contracts/` artifact in one go.
+- This example is good because it merges two same-wave interfaces that both belong to the backend contract and hands them to one planner, producing the same API truth artifact in one go.
 
 ```md
 #### Wave 2
@@ -112,7 +112,7 @@ Delegation order:
 Delegation:
 - Single call to `/axb-api-plan`
 - The prompt lists both interfaces and their individual analysis focuses
-- Shared main artifact: `contracts/openapi.yaml`
+- Shared main artifact: `specs/truth/contracts/openapi.yaml`
 ```
 
 ## Bad Example
@@ -127,6 +127,6 @@ Delegation:
   - `Backend match event contract interface`
 
 Delegation:
-1. Call `/axb-api-plan` to produce `contracts/openapi.yaml`
-2. Call `/axb-api-plan` again to overwrite the same `contracts/openapi.yaml`
+1. Call `/axb-api-plan` to produce `specs/truth/contracts/openapi.yaml`
+2. Call `/axb-api-plan` again to overwrite the same `specs/truth/contracts/openapi.yaml`
 ```

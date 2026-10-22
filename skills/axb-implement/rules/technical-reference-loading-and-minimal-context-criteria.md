@@ -13,7 +13,7 @@
 ```md
 The agent is about to do `T012 [BDD-GREEN]`.
 It first reads the current feature file phase's `Shared Must Read`, confirming the three-guess end-game semantics;
-only then does it supplement with `contracts/openapi.yaml` and `data-model.dbml` when needed.
+only then does it supplement with `specs/truth/contracts/openapi.yaml` and `specs/truth/data/data-model.dbml` when needed.
 ```
 
 ## Bad Example
@@ -29,7 +29,7 @@ It does not read `Shared Must Read`; just knowing this is the three-guess end-ga
 
 - Level: `MUST`
 - `Extra Read` is read only when the current task actually lists extra documents, or when shared-file constraints, visual details, verification methods, or integration decisions need supplementing.
-- Do not preload `tasks.md`, `plan.md`, `research.md`, `contracts/`, `data/`, `ui/` in full before starting to act.
+- Do not preload `tasks.md`, `plan.md`, `research.md`, `specs/truth/contracts/`, `specs/truth/data/`, `ui/` in full before starting to act.
 - If a solution can already converge from `Shared Must Read` or the current task's `Read` and existing code, do not expand the context further.
 
 ## Good Example
@@ -48,7 +48,7 @@ only when aligning the screen with the data model does it read `ui/ui-plan.md` a
 
 ```md
 The agent is about to do `T021`.
-It first reads `spec.md`, `plan.md`, `research.md`, `techstack.md`, `contracts/openapi.yaml`, `data-model.dbml`, and all `ui/*.html` in full before judging the screen error feedback.
+It first reads `spec.md`, `plan.md`, `research.md`, `specs/truth/techstack.md`, `specs/truth/contracts/openapi.yaml`, `specs/truth/data/data-model.dbml`, and all `ui/*.html` in full before judging the screen error feedback.
 ```
 
 # Rule 3 - Read adjacent tasks only when a shared modification surface or integration risk exists
