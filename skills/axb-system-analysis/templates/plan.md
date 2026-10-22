@@ -9,7 +9,7 @@ specs/plans/{{PLAN_PACKAGE}}/
 ├── spec.md                      # /axb-specify
 ├── checklists/
 │   └── requirements.md          # /axb-specify
-├── truth-delta.md               # /axb-specify initializes; /axb-truth-delta maintains
+├── truth-delta.md               # initialized and maintained by /axb-truth-delta
 ├── features/
 │   └── acceptance/
 │       └── *.feature            # /axb-spec-by-example
@@ -74,16 +74,19 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
    - Endpoint type: `{{SYSTEM_INTERFACE_1_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_1_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_1_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_1_DELEGATION}}`
 
 2. `{{SYSTEM_INTERFACE_2_NAME}}`
    - Endpoint type: `{{SYSTEM_INTERFACE_2_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_2_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_2_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_2_DELEGATION}}`
 
 3. `{{SYSTEM_INTERFACE_3_NAME}}`
    - Endpoint type: `{{SYSTEM_INTERFACE_3_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_3_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_3_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_3_DELEGATION}}`
 
 <!--
   Add or remove entries per the technical endpoints actually involved in the requirement.
@@ -102,6 +105,9 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   - `{{WAVE_1_ANALYSIS_FOCUS_1}}`
   - `{{WAVE_1_ANALYSIS_FOCUS_2}}`
 - Arrangement rationale: `{{WAVE_1_PLANNING_RATIONALE}}`
+- Delegation order:
+  - `{{WAVE_1_DELEGATION_ORDER_1}}`
+  - `{{WAVE_1_DELEGATION_ORDER_2}}`   <!-- repeat per delegation; delete unused rows -->
 
 #### Wave 2
 
@@ -112,6 +118,9 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   - `{{WAVE_2_ANALYSIS_FOCUS_1}}`
   - `{{WAVE_2_ANALYSIS_FOCUS_2}}`
 - Arrangement rationale: `{{WAVE_2_PLANNING_RATIONALE}}`
+- Delegation order:
+  - `{{WAVE_2_DELEGATION_ORDER_1}}`
+  - `{{WAVE_2_DELEGATION_ORDER_2}}`   <!-- repeat per delegation; delete unused rows -->
 
 <!--
   Planning must observe:
@@ -121,4 +130,18 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   4. Wave ordering must reflect requirement dependencies; later Waves mean greater dependence on earlier waves' analysis results — do not group arbitrarily.
   5. This section only plans the analysis order, wave splits, and per-wave focus; do not expand each interface's actual analysis output here.
   6. If the requirement involves more endpoint interfaces or longer dependency chains, continue the `#### Wave N` skeleton downward.
+  7. Every inventoried interface must carry exactly one `Delegation` value, using that exact
+     spelling (the same field name every rule and example in
+     `rules/analysis-interface-delegation-and-planner-mapping-criteria.md` uses): a planner skill
+     (`/axb-api-plan`, `/axb-data-plan`), or an explicit taker (`Taken over by: ...`) when no
+     planner applies — the PM's existing `ui/**` reviewed read-only, or `/axb-dsl-refine` for a
+     CLI contract. Rule 2 decides which; do not leave it blank.
+  8. `Delegation order` lists this Wave's delegations in **launch order**, including merged
+     handoffs (Rule 3). Launch order and parallel analysis are not in conflict: entries listed
+     consecutively in the same Wave may be started in parallel, and the order decides only what is
+     launched first when that matters (a merged handoff must launch before the entries it absorbs,
+     and a Wave whose analysis is genuinely sequential must say so in its `Arrangement rationale`).
+     Rule 1 delegates by this list, so an omitted entry is an unimplementable plan rather than a
+     formatting slip. Continue the list downward per delegation; a Wave with one delegation keeps
+     one row.
 -->

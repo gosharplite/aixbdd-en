@@ -1,9 +1,9 @@
 # Rule 1 - `techstack.md` must present a high-level technical stack overview, not rewrite research decisions item by item
 
 - Level: `MUST`
-- `techstack.md`'s responsibility is to summarize the final technical stack and main tool layering adopted for this feature — not to rewrite `research.md`'s `Decision`, `Rationale`, and `Alternatives considered` item by item.
+- `techstack.md` is system-wide truth: its responsibility is to summarize the technical stack and main tool layering **currently adopted across the whole system** — not to rewrite `research.md`'s `Decision`, `Rationale`, and `Alternatives considered` item by item.
 - If some content has gone into detailed trade-offs, item-by-item alternatives, or long rationale passages, keep it in `research.md` instead of copying it into `techstack.md`.
-- `techstack.md` should let downstream planning or implementation quickly understand "which technologies were finally adopted this time".
+- `techstack.md` should let downstream planning or implementation quickly understand "which technologies the system currently uses". It is not a per-increment changelog: `/axb-technical-research` merges this round's decisions into the existing stack and leaves the file describing the complete current state.
 
 ## Good Example
 
@@ -32,7 +32,7 @@
 # Rule 2 - `techstack.md` must include high-level categories, a technology list, and a purpose field
 
 - Level: `MUST`
-- `techstack.md` must contain at least `Tech Stack Overview` and `Technologies Not Introduced in This Development`.
+- `techstack.md` must contain at least `Tech Stack Overview` and `Excluded Technologies`.
 - Every category within `Tech Stack Overview` must use a table with the same fields, containing at least the three columns `Category`, `Adopted Technology`, `Purpose`.
 - If a high-level category has no content, the whole section may be deleted; but retained categories must maintain the same field structure.
 
@@ -65,16 +65,16 @@
 # Rule 3 - `techstack.md` should list only finally adopted and explicitly excluded technologies
 
 - Level: `SHOULD`
-- `techstack.md` should focus on the technologies finally adopted for this feature, and those explicitly decided not to be introduced this time.
+- `techstack.md` should list the technologies the system currently adopts, and the technologies explicitly excluded system-wide.
 - Do not mix undecided candidates, ones only briefly evaluated, or ones excluded without entering the final boundary into the adopted list.
-- If a technology was only researched but not adopted, keep it in `research.md`'s `Alternatives considered` first, unless it is an explicit "technology not introduced in this development".
+- If a technology was only researched but not adopted, keep it in `research.md`'s `Alternatives considered` first, unless it is an explicit system-wide exclusion.
 
 ## Good Example
 
 - This example is good because it lists only final adoptions and explicit exclusions.
 
 ````md
-## Technologies Not Introduced in This Development
+## Excluded Technologies
 
 - `React` or other frontend frameworks
 - Third-party drag-and-drop packages (e.g. `SortableJS`)
@@ -96,7 +96,7 @@
 
 - Level: `MUST`
 - `Testing & Verification` must not list only one generic test framework. For every confirmed existing end, write that end's BDD techstack and purpose.
-- When the user has not changed the test strategy, each end should be written as E2E; do not list "full browser E2E" or backend E2E under `Technologies Not Introduced in This Development`.
+- When the user has not changed the test strategy, each end should be written as E2E; do not list "full browser E2E" or backend E2E under `Excluded Technologies`.
 - The frontend webapp's runner and the backend API's runner are listed separately. The purpose must state which end's Gherkin it runs, and whether it hits screens or API / authoritative state.
 
 ## Good Example
@@ -124,7 +124,7 @@
 | API testing | `vitest` | Test execution framework |
 | Manual verification | `ui/*.html` | Frontend operations |
 
-## Technologies Not Introduced in This Development
+## Excluded Technologies
 
 - Full browser E2E test framework
 ````

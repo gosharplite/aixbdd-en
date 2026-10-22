@@ -1,4 +1,4 @@
-# Tech Stack Summary: {{TECHSTACK_TOPIC}}
+# Tech Stack Summary
 
 ## Tech Stack Overview
 
@@ -37,7 +37,7 @@
 | {{TESTING_CATEGORY_2}} | {{TESTING_TECH_2}} | {{TESTING_PURPOSE_2}} |
 | {{TESTING_CATEGORY_3}} | {{TESTING_TECH_3}} | {{TESTING_PURPOSE_3}} |
 
-## Technologies Not Introduced in This Development
+## Excluded Technologies
 
 - {{EXCLUDED_TECH_1}}
 - {{EXCLUDED_TECH_2}}

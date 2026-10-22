@@ -1,6 +1,6 @@
 ---
 name: axb-specify
-description: Turn natural-language functional requirements into a new plan package. Each execution creates the next `specs/plans/NNN-<slug>/`, produces `spec.md`, `checklists/requirements.md`, and initializes `truth-delta.md`; it must not rewrite old plan packages, nor write into `specs/truth/**`.
+description: Turn natural-language functional requirements into a new plan package. Each execution creates the next `specs/plans/NNN-<slug>/`, produces `spec.md` and `checklists/requirements.md`, and has `truth-delta.md` initialized by `/axb-truth-delta`; it must not rewrite old plan packages, nor write into `specs/truth/**`.
 disable-model-invocation: true
 ---
 
@@ -16,7 +16,8 @@ disable-model-invocation: true
 2. READ Read `templates/spec.template.md`, `templates/spec.example.md`, `templates/requirements-checklist.md`, and `templates/requirements-checklist.example.md` to confirm the fixed structure of the spec and checklist.
 3. READ Read `rules/feature-directory-naming-and-output-placement-criteria.md` to confirm the naming and output placement of the next `NNN-<slug>` plan package.
 4. READ Read `.agents/constitution/CONSTITUTION.md`, `.agents/constitution/shared.md`, `.agents/constitution/skills/axb-specify/spec.md`, and `.agents/constitution/skills/axb-specify/requirements-checklist.md`, treating their rules as constraints above the local artifact standards.
-5. WRITE Create `specs/plans/NNN-<slug>/` and `checklists/`, and initialize the `truth-delta.md` skeleton; this phase does not create or modify `specs/truth/**`.
+5. WRITE Create `specs/plans/NNN-<slug>/` and `checklists/`; this phase does not create or modify `specs/truth/**`.
+6. DELEGATE Call `/axb-truth-delta` in its **initialization mode** to create `truth-delta.md` from its fixed template (plan package, truth root, and the four truth owner section headings with placeholder rows). Do not hand-author the skeleton here: the format is owned by `/axb-truth-delta`, and a locally invented one drifts from the four-owner table its Phase 3 assumes. No truth owner has acted yet, so it carries no change rows.
 
 ## Phase 2 -- Converge requirement gaps and the clarify strategy
 
@@ -37,4 +38,4 @@ disable-model-invocation: true
 
 ## Phase 5 -- Deliver and hand off follow-ups
 
-1. WRITE Report to the user the plan package, spec, checklist, truth-delta paths, whether `/axb-clarify` was entered this time, the remaining `NEEDS CLARIFICATION` or assumptions, and whether this plan can proceed to `/axb-spec-by-example` or `/axb-technical-research`.
+1. WRITE Report to the user the plan package, spec, checklist, truth-delta paths, whether `/axb-clarify` was entered this time, the remaining `NEEDS CLARIFICATION` or assumptions, and whether this plan can proceed to the next step. The next step is `/axb-spec-by-example` (optionally preceded by `/axb-clarify-over-specs`); do not name later pipeline steps such as `/axb-technical-research` — they read artifacts the intervening skills produce, and offering them lets a caller skip acceptance Gherkin and the UI plan.

@@ -2,6 +2,7 @@
 
 - Level: `MUST`
 - When `axb-system-analysis` delegates to each planner skill, it must execute in the `Wave` order already defined in `plan.md`; do not skip the previous wave and start a later one just because some planner looks ready to go first.
+- Within a `Wave`, follow that wave's `Delegation order` as a **launch order**, not a serialization: entries the plan judges parallelizable may be started without waiting for the previous entry to finish, and the order decides only what launches first when that matters. A merged handoff (Rule 3) launches before the entries it absorbs.
 - Parallel delegation within the same `Wave` is allowed, provided these interfaces have been judged parallelizable for analysis in `plan.md`.
 - If a planner's analysis clearly depends on information only produced by the previous `Wave`, it must wait for the previous `Wave` to complete before delegation.
 
@@ -14,15 +15,15 @@
 
 - Parallel analysis interfaces:
   - `Backend room & match API interface`
+- Delegation order:
+  - 1. Launch `/axb-api-plan`
 
 #### Wave 2
 
 - Parallel analysis interfaces:
   - `Room & match state data interface`
-
-Delegation order:
-1. Call `/axb-api-plan` first
-2. After Wave 1 completes, call `/axb-data-plan`
+- Delegation order:
+  - 1. Launch `/axb-data-plan`
 ```
 
 ## Bad Example
@@ -34,15 +35,15 @@ Delegation order:
 
 - Parallel analysis interfaces:
   - `Backend room & match API interface`
+- Delegation order:
+  - 1. Launch `/axb-data-plan`
 
 #### Wave 2
 
 - Parallel analysis interfaces:
   - `Room & match state data interface`
-
-Delegation order:
-1. Call `/axb-data-plan` first
-2. Add `/axb-api-plan` later
+- Delegation order:
+  - 1. Launch `/axb-api-plan`
 ```
 
 # Rule 2 - planner / contract-owner mapping must be decided by analysis responsibility boundaries
@@ -62,11 +63,11 @@ Delegation order:
 ```md
 1. `Room & match state data interface`
    - Main interfaces: Room, Game, Guess state holding and life cycles
-   - Delegate: `/axb-data-plan`
+   - Delegation: `/axb-data-plan`
 
 2. `Backend realtime event contract interface`
    - Main interfaces: join/create, ready, start, guess, broadcast
-   - Delegate: `/axb-api-plan`
+   - Delegation: `/axb-api-plan`
 
 3. `Frontend matching & match interface`
    - Main interfaces: screen states, role indicators, operation feedback
@@ -87,7 +88,7 @@ Delegation order:
 
 ```md
 1. `Backend matching & match interface`
-   - Delegate: `/axb-data-plan`, `/axb-api-plan`
+   - Delegation: `/axb-data-plan`, `/axb-api-plan`
    - Reason: it also has socket events in it
 ```
 

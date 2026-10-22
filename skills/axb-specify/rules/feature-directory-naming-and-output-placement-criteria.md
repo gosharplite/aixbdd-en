@@ -25,7 +25,7 @@ specs/plans/001-online-pvp-1a2b/spec.md
 # Rule 2 - axb-specify may only write plan artifacts
 
 - Level: `MUST`
-- `/axb-specify` may only write `spec.md`, `checklists/requirements.md`, and initialize `truth-delta.md`.
+- `/axb-specify` may only write `spec.md` and `checklists/requirements.md`. Initializing `truth-delta.md` is delegated to `/axb-truth-delta`, which owns that file's fixed format; do not hand-author the skeleton here.
 - `/axb-specify` must not add, modify, or delete `specs/truth/**`.
 - Requirements involving existing truth may describe expected add / modify / delete intents in the spec, but the actual truth changes are handed to the truth owner skill.
 

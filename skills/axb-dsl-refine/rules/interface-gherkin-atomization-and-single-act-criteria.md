@@ -37,24 +37,24 @@ Rule: complete three-guess flow
   - Such a state exists (not entailed) → this is another aspect and must be split into a different Rule.
 - Entailment looks only at "valid domain states", not at "whether it can fail alone after injecting an artificial bug". Any artificial bug can make a single assertion fail alone; using "can it fail alone" as the premise degenerates into exactly one `Then` per Rule, is not decidable, and must not be adopted (the original "if only one result is broken, could this Rule still pass" is exactly this invalid reading).
 - If a `Then`'s predicate points to a new subject (another object or event nameable in domain terms), it is a second aspect regardless of whether the same operation is shared, and must be split into a separate Rule.
-- `STANDARDS.md` §5.2's channel labels `Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen` are fixed contract vocabulary (see the Project Language section of `STANDARDS.md`); together with the exit / verdict channels they are the evidence-channel vocabulary for "the same subject", and they do not authorize merging independent non-entailed facts into one Rule.
+- `STANDARDS.md` §5.2's channel labels `Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen` are fixed contract vocabulary (see the Project Language section of `STANDARDS.md`); together with the CLI evidence channels (`stdout` / `stderr` / exit code) they are the evidence-channel vocabulary for "the same subject", and they do not authorize merging independent non-entailed facts into one Rule. (The CLI channels have no canonical definition in `STANDARDS.md` yet — tracked as #4; until then, name the stream explicitly rather than relying on a shorthand.)
 - Whether the subject's outcome entails a sub-assertion depends on domain semantics; the author must point to the domain model, contract, or data definitions relied upon. When undecidable, converge the domain semantics first; do not split or merge on gut feeling.
 - The following are smells, not criteria: if a Rule title contains success and failure, acceptance and rejection, presented result and state invariant, history write and turn switch at the same time, it can usually still be split.
 
 ## Calibration Set
 
-- Any new atomization criterion must simultaneously reproduce all anchors in the table below; this table is also the convergence basis for issue #5.
+- Any new atomization criterion must simultaneously reproduce all anchors in the table below. Every row is self-contained: none depends on an external tracker item or an unshipped artifact, so the table can be applied as-is.
 
 | Case | Subject | Is the sub-assertion entailed? | Verdict |
 | --- | --- | --- | --- |
 | Rule 2 Good Example: `the match has ended` + `Alice wins` | one winning event | Yes (winning ⟹ match ended) | Merge into one Rule |
-| CLI successfully creates workspace: response content + exit 0 (tellme#4 Q2) | one successful creation | Yes (under the contract definition, the response and verdict channel are determined by the success outcome) | Merge into one Rule |
+| A CLI command that creates a workspace: `stdout names the new workspace` + `the exit code is 0` | one successful creation | Yes (under the command contract, both the `stdout` message and the exit code are determined by the success outcome) | Merge into one Rule |
 | Rule 1 Good Example: the three three-guess Rules | three mutually independent results | No | Split into three Rules |
 | Rule 6 Good Example: the "reject / no history added / turn unchanged" of not-your-turn | three prohibitions that can each fail | No (each prohibition can fail independently) | Split into three Rules |
-| tellme#4 W2: `reuses the session workspace` + `workspace still holds the file` | depends on the domain definition of `reuse the workspace` | Determined by domain definition | Merge if entailed, else split |
-| tellme#4 D2: `configuration resolved` + each sub-resolution result | depends on the domain definition of `resolved` | Determined by domain definition | Merge if entailed, else split |
+| Container outcome: `reuses the session workspace` + `the workspace still holds the file` | one container outcome whose contents are the assertion | Depends on the domain definition of `reuse the workspace` | Merge if entailed, else split |
+| Aggregate outcome: `configuration resolved` + each sub-resolution result | one aggregate outcome whose parts are the assertion | Depends on the domain definition of `resolved` | Merge if entailed, else split |
 
-- W2 and D2 are structurally isomorphic (container and its contents, aggregate and its sub-results), so they **must receive the same verdict**; if the domain definition cannot answer, supplement the domain semantics first — do not split one and merge the other.
+- The last two rows are structurally isomorphic (container and its contents; aggregate and its sub-results), so they **must receive the same verdict**; if the domain definition cannot answer, supplement the domain semantics first — do not split one and merge the other.
 
 ## Good Example
 
