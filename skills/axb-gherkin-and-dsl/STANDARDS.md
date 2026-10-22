@@ -18,9 +18,9 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 | §3's quoting and DataTable conventions | language-independent | always followed, unchanged with language |
 | §4/§5's DSL meta-schema field tokens (`DSL Sentence`, `Gherkin Params`, `Data Table Params`, `Default Params`, implementation-semantics column) | **fixed** | the audit script identifies a table by its first column header being exactly `DSL Sentence` (the legacy upstream Chinese header `DSL 句型` is also accepted); translating that token makes the audit silently match zero and every step be misjudged as missing a DSL |
 | §5.2's channel labels (`Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen`) and §5.1's Given / When sub-labels (`How` / `State landing` / `Write-back` / `No-check`) | **fixed** | cross-project shared contract vocabulary |
-| §7's CLI Given / When sub-labels (`Invocation` / `Working state` / `Landing` / `No-check`) and Then channels (`Stdout` / `Stderr` / `Exit Code` / `Filesystem State`) | **fixed** | cross-project shared contract vocabulary |
+| §7's CLI Given / When sub-labels (`Invocation` / `Working state` / `Landing` / `Captured outputs` / `No-check`) and Then channels (`Stdout` / `Stderr` / `Exit Code` / `Filesystem State` / `Re-read Confirmation` / `Should Not Happen`) | **fixed** | cross-project shared contract vocabulary; §7 is the single enumeration for CLI, and the two Then channels it shares with §5.2 keep their §5.2 definitions |
 
-- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens and the §5 / §6 / §7 contract channel vocabulary.
+- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens and the §5 / §7 contract channel vocabulary. (§6's granularity labels are guidance for how to write frontend semantics, not fixed contract tokens, so they stay project-declared prose — which is why the table registers no §6 row.)
 - This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in English") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
 
 ## 1. Gherkin Language Boundaries & Sentence Convergence
@@ -127,6 +127,12 @@ Principles:
 - For business facts like "opened a new room", "joined an existing room", "guessed the cipher correctly", "this operation was rejected", at least verify both the response and the authoritative state
 - Rejection-type Then must especially verify "the state was not corrupted by the failed request"
 
+> **Open vocabulary gap (#5).** The shipped examples and `axb-tasks`' `tasks.md` read the Then rows under
+> a `Must-check` label, which is evidently intended as the Then counterpart of §5.1's `No-check` — but it
+> is defined nowhere in this standard. Until #5 defines it here, treat `Must-check` as this section's
+> Then contract written as a prefix, not as a separate set of channels. Do not introduce further
+> undocumented labels in the meantime.
+
 ## 6. Frontend DSL Implementation Semantics
 
 The frontend assumes implementation as Playwright BDD.
@@ -169,11 +175,13 @@ Given / When must write at least:
 - `Invocation` (the exact argv the step runs: command, flags, arguments, and stdin content if any)
 - `Working state` (the pre-existing filesystem / config / database state the invocation acts on)
 - `Landing` (where this step's effect lands: which file, which config key, which row)
+- `Captured outputs` (the invocation's captured `stdout`, `stderr`, and exit status — the evidence §7.2's channels assert on)
 - `No-check` (no need to check)
 
 Principles:
 
 - The "how" of a CLI step is the argv, not a shell line; when stdin content matters it is an input the row must state, not an environment detail the test guesses
+- Every §7.2 channel asserts against what this step captured, so the capture itself is contracted here — as §5.1 requires `Write-back` rather than leaving the response implicit
 - Exit status is an **output**, never a precondition — do not encode "the command succeeds" into `Given`
 - For a command expected to fail, the row must state explicitly that the authoritative state must not be altered
 
@@ -185,7 +193,7 @@ Then is written as a verification contract, and must at least pick the relevant 
 - `Stderr`: this command's diagnostics
 - `Exit Code`: the numeric exit status
 - `Filesystem State`: files, directories, or config keys written, removed, or left untouched
-- `Re-read Confirmation`: still holds on a second invocation
+- `Re-read Confirmation`: still holds when re-observed through a **read-only** re-query — re-list, re-read the `Filesystem State`, or run a status subcommand. Never re-run a mutating invocation to confirm it: `create workspace` run twice fails with "already exists", so the confirmation would either be unimplementable or assert the opposite of what it should
 - `Should Not Happen`: must not be written, must not be removed, must not leak
 
 Principles:
@@ -193,7 +201,7 @@ Principles:
 - Then must not stop at the exit code alone
 - A success Then must name at least one landing channel besides `Exit Code` — `Stdout` content, or `Filesystem State` — because a zero exit status alone cannot distinguish "did the work" from "did nothing and said nothing"
 - A rejection or failure Then must verify the non-zero `Exit Code` **and** that the authoritative state was not corrupted by the failed invocation, mirroring §5.2's rejection rule
-- Assert on exit status and channel presence, not on exact human-readable wording: error prose is not a contract, and pinning it makes every message edit a test failure
+- Assert the fact the channel must carry, not the exact human-readable wording: error prose is not a contract, and pinning it makes every message edit a test failure. "`Stdout` is non-empty" is not an assertion — a greeting banner satisfies it
 
 ### 7.3 Things That Must Not Appear in the DSL Main Table
 
