@@ -63,7 +63,7 @@
 | Action | Truth Spec | Change Summary | Reason |
 | --- | --- | --- | --- |
 | MODIFY | `specs/truth/contracts/openapi.yaml` -> `RoomSnapshot.messages` | Add `messages` to the room snapshot's required fields. | The frontend polls chat messages with the same snapshot. |
-| NOOP | `specs/truth/contracts/openapi.yaml` -> `GET /rooms/{roomId}` | Inspected the read entry; no new endpoint needed. | The existing snapshot entry suffices. |
+| NOOP | `specs/truth/contracts/openapi.yaml` -> `GET /rooms/{roomId}` | Inspected the read entry; no new endpoint needed. | Inspected, nothing needed: the existing snapshot entry suffices. |
 | NOOP | `specs/truth/contracts/openapi.yaml` -> (whole scope) | Not applicable this round: no API surface. | Plain line-oriented CLI; `/axb-api-plan` skipped by analysis decision. |
 ```
 

@@ -570,7 +570,7 @@ A pure-CLI round inventorying a line-oriented terminal end (no TUI). No API, dat
 
 1. axb-system-analysis inventories a CLI end and records it as an `Interface` of the CLI kind.
 2. No API, data or UI planner applies; the plan records the CLI end as carried forward to its contract owner at delivery.
-3. Because no API surface exists, axb-system-analysis skips axb-api-plan and records the skip as a noop `DeltaEntry` in that owner's section, its reason naming the analysis decision.
+3. Because no API or data surface exists, axb-system-analysis skips both axb-api-plan and axb-data-plan, recording each skip as a noop `DeltaEntry` in its own owner section with the analysis decision as the reason.
 4. A `cli` interface that ships a TUI instead gets a terminal-mode `UIPlan` (no HTML) from the PM, which system-analysis reviews but does not redo or re-plan.
 5. axb-dsl-refine writes the CLI feature files under `specs/truth/features/cli/**`, reusing the module boundaries.
 6. axb-truth-delta records the CLI feature and DSL change in the round's `TruthDelta`.

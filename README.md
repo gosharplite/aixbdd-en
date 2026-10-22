@@ -67,9 +67,10 @@ When developing a CLI application (no web frontend or HTTP/REST API), the workfl
 3. **CLI Contract via `/axb-dsl-refine`**: The CLI end is a first-class truth-tree interface — a
    third `InterfaceKind`, `cli`, alongside `backend`/`frontend`. The executable Gherkin feature files
    (`specs/truth/features/cli/**`) and their step definitions (`dsl.md`) serve as the formal CLI
-   contract and acceptance test runner. Since no API/data/UI planner applies, `/axb-system-analysis`
-   records those skips as `NOOP` rows and carries the CLI end forward to its contract owner
-   `/axb-dsl-refine`.
+   contract and acceptance test runner. Since no API/data planner applies, `/axb-system-analysis`
+   records those two skips as `NOOP` rows and carries the CLI end forward to its contract owner
+   `/axb-dsl-refine`. (`/axb-ui-plan` applies to a TUI only, and is not a truth owner — it has no
+   section in `truth-delta.md` and is never recorded there.)
 
 ### Resolving PR and Review Findings
 

@@ -33,11 +33,16 @@ disable-model-invocation: true
 
 1. READ When planner correspondence needs judgment, read `rules/analysis-interface-delegation-and-planner-mapping-criteria.md`.
 2. DELEGATE In Wave order, hand API interfaces to `/axb-api-plan` and data interfaces to `/axb-data-plan`; every handoff must include the plan package path, truth root, truth-delta path, interface name, and analysis focus. Frontend interfaces do NOT delegate to `/axb-ui-plan` (UI planning is already done by the PM): if the frontend is involved this time, only review the PM-delivered existing `ui/ui-plan.md` and prototypes, confirming implementability within current technical boundaries. A CLI interface shipping an interactive TUI is handled like the frontend, reviewing only its terminal-mode UI artifacts (`ui/ui-plan.md` and `ui/screens/*.txt`); a plain line-oriented CLI interface has no corresponding analysis planner and is not delegated in this phase — instead it is explicitly handed off at delivery to the next phase's contract owner `/axb-dsl-refine`.
-3. DELEGATE Record every planner you skipped by decision. This skill decides which planners a round
-   does not need, so it — not the absent planner — is responsible for saying so in `truth-delta.md`.
+3. DELEGATE Record every **truth-owner** planner you skipped by decision. This skill decides which
+   planners a round does not need, so it — not the absent planner — is responsible for saying so in
+   `truth-delta.md`. Only the truth owners that have a section in that ledger get a row
+   (`/axb-technical-research`, `/axb-api-plan`, `/axb-data-plan`, `/axb-dsl-refine`); `/axb-ui-plan` is
+   **not** a truth owner and has no section, so it is never recorded this way.
    For each skipped planner, hand `/axb-truth-delta` a `NOOP` row for that planner's owner section,
    with the `Reason` stating that the owner was skipped by analysis decision and why (e.g. "Plain
-   line-oriented CLI; no API surface exists, so `/axb-api-plan` is skipped by analysis decision").
+   line-oriented CLI; no API surface exists, so `/axb-api-plan` is skipped by analysis decision"). A
+   round can skip more than one owner — record one row per skipped owner in that round, not one per
+   invocation.
    Do not write an "inspected, nothing needed" `NOOP` for a planner that never ran: nothing was
    inspected, and that reason would be a false record. This skill still does not modify truth — it
    only records the decision, exactly as Phase 1's "does not modify truth" boundary requires.
