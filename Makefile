@@ -34,7 +34,13 @@ EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 # declined to depend on it — so this check is OPTIONAL and says so out loud when the tool
 # is missing. A skipped check that prints nothing reads as a passing one; that is the
 # "dropped-but-unprinted" failure the README's coverage rule exists to prevent.
-MODELITH := $(shell command -v modelith 2>/dev/null)
+#
+# `?=` so a caller (or a test) can set MODELITH explicitly. That makes "the tool is
+# absent" a state the suite can construct instead of a property of the machine it runs
+# on — the previous version simulated absence by manipulating PATH, which both failed on
+# machines with a system-wide install and could not reproduce absence at all once the
+# lookup had already run at parse time.
+MODELITH ?= $(shell command -v modelith 2>/dev/null)
 
 # The tree the checkers inspect. Defaults to this worktree; the pre-commit hook points it
 # at a snapshot of the git *index*, because a commit is built from the index, not from the
@@ -49,6 +55,7 @@ ROOT ?= .
 # ("up to date") rather than the absence of a failure, because only that distinguishes a
 # real check from that shape of silent one.
 MODEL_SOURCE = $(ROOT)/domain-model/aixbdd.modelith.yaml
+MODEL_OUTPUT = $(ROOT)/domain-model/aixbdd.modelith.md
 
 .PHONY: help check check-paths check-tokens check-names check-refs check-params check-ui-plan \
         check-model check-audit check-python test install-hooks uninstall-hooks
@@ -84,6 +91,18 @@ check-ui-plan: check-python ## #24 item 3: every frame/page a ui-plan refers to 
 
 # No `check-python` dependency: this target runs a Go binary, not the interpreter, and
 # depending on one it does not use would make its failure messages lie about the cause.
+#
+# Three states, and the middle one is the point:
+#   tool absent                        -> NOT CHECKED, exit 0 (optional by design)
+#   source absent AND no orphaned .md  -> NOT CHECKED, exit 0 (nothing exists to check)
+#   source absent BUT the .md remains  -> FAIL,   exit 1 (a generated file with no source
+#                                        is maintained by hand — the very defect this
+#                                        target exists to catch, in its worse direction)
+#
+# `"$(MODELITH)"`, not bare `modelith`: the guard above resolved a path, so invoking the
+# bare name looks it up a second time, and if the two shells disagree the guard reports
+# installed while the recipe exits 127 with no NOT CHECKED line. One identity decision,
+# used everywhere (#26's classifier lesson).
 check-model: ## #22 shape 14: the generated domain-model .md still matches its .yaml
 	@if [ -z "$(strip $(MODELITH))" ]; then \
 		echo "NOT CHECKED: modelith is not installed, so the generated domain-model .md was NOT verified"; \
@@ -91,17 +110,23 @@ check-model: ## #22 shape 14: the generated domain-model .md still matches its .
 		exit 0; \
 	fi; \
 	if [ ! -f "$(MODEL_SOURCE)" ]; then \
-		echo "NOT CHECKED: $(MODEL_SOURCE) not found, so there is no source to render-check"; \
+		if [ -f "$(MODEL_OUTPUT)" ]; then \
+			echo "FAILED: $(MODEL_OUTPUT) exists but its source $(MODEL_SOURCE) does not." >&2; \
+			echo "  A generated artifact with no source is maintained by hand — restore the source" >&2; \
+			echo "  or delete the generated file. This is #22 shape 14 in its worse direction." >&2; \
+			exit 1; \
+		fi; \
+		echo "NOT CHECKED: neither $(MODEL_SOURCE) nor its generated .md exists, so there is nothing to render-check"; \
 		exit 0; \
 	fi; \
-	modelith render --check "$(MODEL_SOURCE)"
+	"$(MODELITH)" render --check "$(MODEL_SOURCE)"
 
 check-audit: check-python ## DSL topology audit of this repo's own example tree
 	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(ROOT)/$(EXAMPLES)
 
 check: check-paths check-tokens check-names check-refs check-params check-ui-plan check-model check-audit ## Run everything (default gate)
 
-test: check-python ## Run the checkers' own test suites (invariants, params, ui-plan, hook lifecycle)
+test: check-python ## Run the checkers' own test suites (every scripts/test_*.py, plus the audit's)
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
 

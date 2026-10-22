@@ -67,7 +67,19 @@ status=0
 output=$(make check ROOT="$snapshot" 2>&1) || status=$?
 
 if [ "$status" -eq 0 ]; then
-    echo "pre-commit: gate passed." >&2
+    # A passing gate can still have reported a gap: `check-model` prints `NOT CHECKED`
+    # and exits 0 when `modelith` is absent, which is how an optional check stays honest
+    # without blocking every commit on a missing Go binary. Discarding that line on
+    # success would make the promise false in the one context it was written for — the
+    # committer's terminal — and silence about an unrun check reads as a passing one.
+    gaps=$(printf '%s\n' "$output" | grep -F 'NOT CHECKED' || true)
+    if [ -n "$gaps" ]; then
+        echo "pre-commit: gate passed, with gaps:" >&2
+        printf '%s\n' "$gaps" >&2
+        echo "pre-commit: those checks did not run, so this commit was not verified by them." >&2
+    else
+        echo "pre-commit: gate passed." >&2
+    fi
     exit 0
 fi
 
