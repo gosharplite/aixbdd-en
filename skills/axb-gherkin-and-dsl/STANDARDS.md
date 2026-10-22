@@ -20,7 +20,7 @@ These standards are the detailed criteria for the `axb-gherkin-and-dsl` skill. T
 | §5.2's `Must-check` Then marker and channel labels (`Presented Result` / `Authoritative State` / `Re-read Confirmation` / `Cross-Perspective` / `Should Not Happen`), and §5.1's Given / When sub-labels (`How` / `State landing` / `Write-back` / `No-check`) | **fixed** | cross-project shared contract vocabulary; `Must-check` is the single Then marker for every interface kind (§5.2 defines it, §6 and §7 use it) |
 | §7's CLI Given / When sub-labels (`Invocation` / `Working state` / `Landing` / `Captured outputs` / `No-check`) and Then channels (`Stdout` / `Stderr` / `Exit Code` / `Filesystem State` / `Re-read Confirmation` / `Should Not Happen`) | **fixed** | cross-project shared contract vocabulary; §7 is the single enumeration for CLI, and the two Then channels it shares with §5.2 keep their §5.2 definitions |
 
-- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens, the §5 / §7 contract channel vocabulary, and the `Must-check` cell marker. (§6's granularity labels are guidance for how to write frontend semantics, not fixed contract tokens, so they stay project-declared prose — which is why the table registers no §6 row.)
+- In other words: **project-declared** = file names, parameter keys, sentences, and prose; **fixed** = the §4 meta-schema tokens, the §5 / §7 contract channel vocabulary, and the two cell markers `No-check` (§5.1) and `Must-check` (§5.2), which apply to **every** interface kind — §6 and §7 rows carry `No-check` too. (§6's granularity labels are guidance for how to write frontend semantics, not fixed contract tokens, so they stay project-declared prose — which is why the table registers no §6 row.)
 - This section and the governance layer's language rules (e.g. `.agents/constitution/shared.md`'s "descriptive text must be written in English") are complementary: governance-layer rules define the **default language and where it lands**; this section defines the **scope that a project declaration may override**.
 
 ## 1. Gherkin Language Boundaries & Sentence Convergence
@@ -71,6 +71,16 @@ Every DSL row in the interface root and module `dsl.md` must have at least the f
 - `Default Params`
 - implementation-semantics column
 
+**The implementation-semantics column's header names the runner whose semantics it records, and must
+end with `Implementation Semantics`** — `StepDef Implementation Semantics` for backend,
+`Playwright BDD Implementation Semantics` for frontend. A CLI interface names the harness recorded in
+`specs/truth/techstack.md`'s `Testing & Verification` section, e.g. `bats Implementation Semantics`;
+§7 defines what the CLI cells must contain but does not fix a runner name, because the project chooses
+it. An interface kind added later names its own runner the same way and keeps the suffix.
+
+Downstream documents therefore refer to "the implementation-semantics column" rather than to one
+kind's header, and the suffix is what makes that reference unambiguous.
+
 ### 4.1 Gherkin Parameter Column
 
 - Bullet-list each parameter
@@ -103,7 +113,13 @@ Given / When must write at least:
 - `How` (how to do it)
 - `State landing` (authoritative state landing)
 - `Write-back` (write-back)
-- `No-check` (no need to check)
+- `No-check` (the boundary of what this step deliberately does **not** assert)
+
+**`No-check` is a statement, not a formality.** It names what this Given / When step does not verify,
+because verification belongs to a later Then — "the order summary and the discount state", "the
+resulting amounts, which the following Then asserts". A bare `No-check` with no scope, or `No-check:
+none`, does not satisfy this field: it records no boundary and so tells a step-definition author
+nothing. A step that asserts something itself is a Then, not a Given / When with an empty `No-check`.
 
 Principles:
 
@@ -177,7 +193,8 @@ Frontend implementation semantics should prioritize around:
 
 These five are guidance for how to write frontend semantics, not fixed contract tokens — see the
 recap bullet in "Project Language", which states that §6's labels stay project-declared and notes that
-the table carries no §6 row. One thing in a frontend Then cell *is* a fixed token: it opens with
+the table carries no §6 row. Two §5.1 / §5.2 tokens do apply unchanged to frontend rows: Given / When
+carries `No-check` exactly as §5.1 defines it, and a frontend Then cell opens with
 **`Must-check`**, defined once in §5.2 — a frontend Then is a verification contract exactly as a
 backend one is.
 
@@ -201,7 +218,7 @@ Given / When must write at least:
 - `Working state` (the pre-existing filesystem / config / database state the invocation acts on)
 - `Landing` (where this step's effect lands: which file, which config key, which row)
 - `Captured outputs` (the invocation's captured `stdout`, `stderr`, and exit status — the evidence §7.2's channels assert on)
-- `No-check` (no need to check)
+- `No-check` (the boundary of what this step deliberately does not assert — same statement as §5.1)
 
 Principles:
 

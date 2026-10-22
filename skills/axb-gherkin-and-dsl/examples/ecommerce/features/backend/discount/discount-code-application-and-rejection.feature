@@ -50,7 +50,7 @@ Feature: Discount code application and rejection
         | Product Code | Unit Price | Quantity |
         | SKU-A        | 600        | 1        |
         | SKU-B        | 450        | 1        |
-      And "Alice" applies discount code "WELCOME100"
+      When "Alice" applies discount code "WELCOME100"
       When "Alice" applies discount code "WELCOME100"
       Then this operation was rejected
       And the error is "discount code already applied"

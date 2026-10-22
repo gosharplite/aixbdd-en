@@ -22,7 +22,7 @@ Feature: Order recalculation and free-shipping determination
         | Discounted Product Amount | 950   |
         | Shipping Fee              | 60    |
         | Total Payable             | 1010  |
-      And "Alice" views the order summary again
+      When "Alice" views the order summary again
       Then the order summary is as follows:
         | Item                      | Value |
         | Discounted Product Amount | 950   |
