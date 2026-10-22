@@ -15,15 +15,15 @@
 
 - Parallel analysis interfaces:
   - `Backend room & match API interface`
+- Delegation order:
+  - 1. Launch `/axb-api-plan`
 
 #### Wave 2
 
 - Parallel analysis interfaces:
   - `Room & match state data interface`
-
-Delegation order:
-- 1. Call `/axb-api-plan` first
-- 2. After Wave 1 completes, call `/axb-data-plan`
+- Delegation order:
+  - 1. Launch `/axb-data-plan`
 ```
 
 ## Bad Example
@@ -35,15 +35,15 @@ Delegation order:
 
 - Parallel analysis interfaces:
   - `Backend room & match API interface`
+- Delegation order:
+  - 1. Launch `/axb-data-plan`
 
 #### Wave 2
 
 - Parallel analysis interfaces:
   - `Room & match state data interface`
-
-Delegation order:
-- 1. Call `/axb-data-plan` first
-- 2. Add `/axb-api-plan` later
+- Delegation order:
+  - 1. Launch `/axb-api-plan`
 ```
 
 # Rule 2 - planner / contract-owner mapping must be decided by analysis responsibility boundaries
