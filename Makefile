@@ -65,37 +65,45 @@ check-audit: check-python ## DSL topology audit of this repo's own example tree
 
 check: check-paths check-tokens check-refs check-params check-audit ## Run everything (default gate)
 
-test: check-python ## Run the checkers' own test suites
+test: check-python ## Run the checkers' own test suites (invariants, params, hook lifecycle)
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
 
-install-hooks: ## Symlink the tracked hook into .git/hooks, so the gate runs before every commit
+install-hooks: ## Install a stub into .git/hooks that runs the gate; survives branch switches
 	@hooks_dir=$$(git rev-parse --git-path hooks); \
-	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
 	dest=$$hooks_dir/pre-commit; \
-	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
-		echo "already installed: $$dest"; \
-		exit 0; \
-	fi; \
-	if [ -e "$$dest" ]; then \
-		echo "refusing to overwrite an existing hook: $$dest" >&2; \
-		echo "Move it aside, or run 'git commit --no-verify' to skip the gate." >&2; \
-		exit 1; \
-	fi; \
+	classify=$(SCRIPTS)/hooks/classify-hook; \
+	stub=$(SCRIPTS)/hooks/pre-commit-stub; \
+	state=$$(sh "$$classify" "$$dest"); \
+	case "$$state" in \
+		absent|legacy|managed|stale-managed) : ;; \
+		foreign-symlink) \
+			echo "refusing to overwrite a foreign symlink: $$dest -> $$(readlink "$$dest")" >&2; \
+			echo "Move it aside first." >&2; exit 1 ;; \
+		foreign-file) \
+			echo "refusing to overwrite an existing hook: $$dest" >&2; \
+			echo "Move it aside, or run 'git commit --no-verify' to skip the gate." >&2; exit 1 ;; \
+	esac; \
 	mkdir -p "$$hooks_dir"; \
-	ln -s "$$target" "$$dest"; \
-	echo "installed: $$dest -> $$target"; \
-	echo "The gate now runs before every commit. Bypass with: git commit --no-verify"
+	cp "$$stub" "$$dest.tmp" || { echo "could not copy the stub; leaving any existing hook untouched" >&2; rm -f "$$dest.tmp"; exit 1; }; \
+	chmod +x "$$dest.tmp"; \
+	mv -f "$$dest.tmp" "$$dest" || { echo "could not install the hook" >&2; rm -f "$$dest.tmp"; exit 1; }; \
+	if [ "$$state" = "legacy" ]; then echo "replaced the pre-stub symlink at $$dest"; fi; \
+	echo "installed: $$dest (a stub; the gate script is read from the current branch)"; \
+	echo "Bypass with: git commit --no-verify"
 
-uninstall-hooks: ## Remove the hook symlink, leaving any other hooks untouched
+uninstall-hooks: ## Remove the stub, leaving any other hooks untouched
 	@hooks_dir=$$(git rev-parse --git-path hooks); \
-	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
 	dest=$$hooks_dir/pre-commit; \
-	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
-		rm "$$dest"; \
-		echo "removed: $$dest"; \
-	elif [ -e "$$dest" ]; then \
-		echo "left alone: $$dest is not this repository's hook symlink" >&2; \
-	else \
-		echo "nothing to remove: no hook at $$dest"; \
-	fi
+	classify=$(SCRIPTS)/hooks/classify-hook; \
+	state=$$(sh "$$classify" "$$dest"); \
+	case "$$state" in \
+		absent) echo "nothing to remove: no hook at $$dest" ;; \
+		legacy|managed|stale-managed) \
+			rm -f "$$dest"; \
+			if [ "$$state" = "legacy" ]; then echo "removed: $$dest (pre-stub symlink)"; else echo "removed: $$dest"; fi ;; \
+		foreign-symlink) \
+			echo "left alone: $$dest points at $$(readlink "$$dest")" >&2 ;; \
+		foreign-file) \
+			echo "left alone: $$dest is not this repository's hook" >&2 ;; \
+	esac
