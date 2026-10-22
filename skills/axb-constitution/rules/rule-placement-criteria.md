@@ -81,7 +81,7 @@ skills/axb-specify/constitution.md
 
 - Level: `MUST`
 - "A normative claim without a witness must never be promoted to truth (Claim→Witness Obligation)" is the highest governance principle spanning all skills, all phases, and all artifacts, and must be placed in the project's shared constitution `.agents/constitution/shared.md`.
-- The project's `.agents/constitution/shared.md` must explicitly declare the project's **decision surface placement** (e.g., the project ADR directory `decisions/NNNN-*.md`). A normative claim for which no automated witness is established is an architecture decision and must be recorded on that declared decision surface (including rationale, anti-washing ladder review, and sign-off by the human decision maker) — it must never be kept as prose on any truth surface.
+- The project's `.agents/constitution/shared.md` must explicitly declare the project's **decision surface placement** (e.g., the project ADR directory `decisions/NNNN-*.md`). A normative claim for which no automated witness is established is an architecture decision and must be recorded on that declared decision surface (including rationale, witness-exempt approval and anti-laundering review, and sign-off by the human decision maker) — it must never be kept as prose on any truth surface.
 - If the project has not declared a decision surface placement, the Claim→Witness Obligation should block conditionally when encountering `accepted-unwitnessed`, until the project completes the declaration.
 
 ## Good Example

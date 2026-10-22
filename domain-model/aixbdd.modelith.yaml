@@ -210,6 +210,13 @@ entities:
       options, adoption and rejection reasons, risks, and the resulting technology
       choices. Each `Research` is produced together with the `Techstack` update it
       justifies, in one pass; there is no review gate between the two writes.
+    attributes:
+      - name: decisions
+        type: string
+        description: >
+          The adopted technical decisions this round, each with the options considered
+          and the reason for adoption or rejection. These are what a `Techstack`
+          change must be traceable to.
     relationships:
       - entity: Techstack
         cardinality: "n:1"
@@ -218,10 +225,11 @@ entities:
     invariants:
       - id: research-justifies-techstack
         statement: >
-          Every `Techstack` change is justified by a `Decision` in the `Research`
-          artifact produced in the same round; a `Techstack` value never appears
-          without that traceable decision. Review of the pair happens after both are
-          written, at the plan's ready judgment — not as a gate between them.
+          Every `Techstack` change is justified by one of the `Research`'s
+          `decisions`, produced in the same round; a `Techstack` value never appears
+          without that traceable decision. Review of the pair happens while the
+          `PlanPackage` is still `active` — that is, before it becomes `delivered` —
+          not as a gate between the two writes.
 
   AnalysisPlan:
     definition: >
@@ -545,7 +553,7 @@ scenarios:
     actors: [RD, Skill]
     steps:
       - axb-technical-research writes the `Research` with options, reasons, and risks.
-      - "After review, the `Research`'s decisions are applied to the `Techstack` truth."
+      - "In the same pass, the `Research`'s decisions are written into the `Techstack` truth."
       - axb-system-analysis writes the `AnalysisPlan` and orders the work into `Wave`s.
       - "A later `Wave` delegates the API interface; axb-api-plan produces the `Contract` truth."
       - "A later `Wave` delegates the data interface; axb-data-plan produces the `DataModel` truth."
@@ -597,7 +605,7 @@ scenarios:
       - "axb-tasks has produced the `Task`s: alignment work first, then per-feature green and refactor."
       - "Implementation completes the current batch and marks those `Task`s done before starting the next."
       - "For each step definition, the merged `DSL` lookup resolves exactly one `DSLRow` and its implementation semantics are followed."
-      - "`[BDD-GREEN]` and `[BDD-REFACTOR]` `Task`s are delegated to axb-bdd with that task's `TestScope`; axb-implement does not write those step definitions or product code itself."
+      - "`[BDD-GREEN]` and `[BDD-REFACTOR]` `Task`s are delegated to axb-bdd with the test scope their task declares; axb-implement does not write those step definitions or product code itself."
       - "Focused tests run until the feature's scenarios are green; refactor happens only under green protection."
     invariants_touched: [task-strict-ordering, dsl-exact-one-match, skill-scoped-writes]
 

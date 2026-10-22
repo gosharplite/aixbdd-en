@@ -59,9 +59,11 @@
 | --- | --- | --- | --- |
 | `Enter` | Submit current input | `entry` | history adds one, suggestion list recomputed |
 | `Tab` | Accept current suggestion | `entry` | editor inserts suggestion text, cursor at end of line |
-| `↑` / `↓` | Move suggestion selection | `entry` | suggestion list selection cursor moves |
-| `Esc` | Abort execution | `entry` | show abort summary |
-| `?` | Show keybinding help | `30-help` | open the overlay help frame |
+| `↑` / `↓` | Move suggestion selection (in `entry`) | `entry` | suggestion list selection cursor moves |
+| `↑` / `↓` | Scroll the help overlay (in `30-help`) | `30-help` | overlay viewport scrolls; the selection behind it does not change |
+| `Esc` | Abort execution (in `running`) | `entry` | show abort summary |
+| `Esc` | Dismiss the help overlay (in `30-help`) | the frame the overlay was opened from | overlay closes; input and selection state unchanged |
+| `?` | Show keybinding help (from `entry` or `running`) | `30-help` | open the overlay help frame |
 | `Ctrl+C` | Cancel current input | `entry` | clear editor and return to startup frame |
 
 ## State Transition List
@@ -70,8 +72,9 @@
 2. `suggestion` --`Tab` accept--> `entry` (editor inserts suggestion text)
 3. `entry` --`Enter` send--> `running` (show running status)
 4. `running` --complete--> `entry` (output summary, then back to editing)
-5. `entry` --`?`--> `help` --`Esc`--> `entry`
-6. Any frame --invalid input--> show error bar in place (no transition)
+5. `entry` --`?`--> `30-help` --`Esc`--> `entry`
+6. `running` --`?`--> `30-help` --`Esc`--> `running` (the overlay is modal over the frame it was opened from)
+7. Any frame --invalid input--> show error bar in place (no transition)
 
 ## Interaction & Fake Data Principles
 
@@ -83,7 +86,7 @@
 
 - User-visible information: `Input content, suggestion list, focused panel, running status bar, and error messages.`
 - Information that must be hidden: `Internal tool parameters, the full filesystem index, and any server-internal info that should not be exposed.`
-- Main UI states: `Startup, editing, suggestions visible, running, completion summary, error hints.`
+- Main UI states: `Startup, editing, suggestions visible, running, help overlay open, completion summary, error hints.`
 - Role or permission differences: `Single user; no multi-role differences.`
 
 ## Validation & Error Feedback

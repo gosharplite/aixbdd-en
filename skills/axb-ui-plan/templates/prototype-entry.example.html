@@ -109,18 +109,6 @@
 
     .hint { color: var(--muted); }
     .error { color: var(--danger); min-height: 20px; }
-
-    .results { display: none; margin-top: 20px; }
-    .results.is-visible { display: grid; gap: 12px; }
-    .result {
-      display: block;
-      padding: 16px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.05);
-      color: var(--text);
-      text-decoration: none;
-    }
-    .result span { display: block; margin-top: 6px; color: var(--muted); font-size: 14px; }
   </style>
 </head>
 <body>
@@ -149,14 +137,8 @@
       <label for="primaryInput">Search keyword</label>
       <input id="primaryInput" placeholder="e.g. thermos bottle, storage box, desk lamp" />
       <button id="primaryAction">Start browsing products</button>
-      <div class="hint">Enter a product name or category, then view the matching results below and open one to continue.</div>
+      <div class="hint">Enter a product name or category, then open a matching product to view its details.</div>
       <div class="error" id="errorMessage"></div>
-      <div class="results" id="results">
-        <a class="result" href="product-detail.html">
-          Matches for your keyword
-          <span>Open a result to view details and add it to the cart.</span>
-        </a>
-      </div>
     </section>
   </main>
 
@@ -164,19 +146,15 @@
     const button = document.getElementById("primaryAction");
     const input = document.getElementById("primaryInput");
     const errorMessage = document.getElementById("errorMessage");
-    const results = document.getElementById("results");
 
     button.addEventListener("click", () => {
       const value = input.value.trim();
       if (value.length < 2) {
         errorMessage.textContent = "Please enter a search keyword of at least two characters";
-        results.classList.remove("is-visible");
         return;
       }
       errorMessage.textContent = "";
-      // Results render in place on this screen: the plan's page-transition principle
-      // prefers in-page state switching, and there is no separate list page.
-      results.classList.add("is-visible");
+      window.location.href = "product-detail.html";
     });
   </script>
 </body>
