@@ -87,6 +87,26 @@ class HookLifecycle(unittest.TestCase):
         result = self.commit("clean change")
         self.assertEqual(result.returncode, 0, result.stderr)
 
+    def test_a_passing_gate_still_surfaces_its_gaps(self) -> None:
+        """A `NOT CHECKED` line must reach the committer, not just `make check` output.
+
+        `check-model` exits 0 with a `NOT CHECKED` line when `modelith` is absent, so an
+        optional check never blocks a commit on a missing Go binary. That is only honest
+        if the line is *shown*: the hook captures the gate's output and used to print it
+        on failure only, so a maintainer without modelith saw exactly `gate passed.` —
+        silence about an unrun check, which reads as a passing one.
+
+        The scratch repo does not stage `domain-model/`, so `check-model` reports the
+        gap deterministically here whatever the machine has installed.
+        """
+        self.make("install-hooks")
+        readme = self.root / "README.md"
+        readme.write_text(readme.read_text() + "\nA harmless line.\n")
+        result = self.commit("clean change with a gap")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("NOT CHECKED", result.stderr, "the gap was captured but not shown")
+        self.assertIn("gate passed, with gaps:", result.stderr)
+
     def test_staged_violation_is_blocked_and_named(self) -> None:
         self.make("install-hooks")
         self.plant_violation()

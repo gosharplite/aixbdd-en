@@ -237,6 +237,7 @@ it); a number in front of the table has the same failure mode and none of the ut
 | `make check-refs` | **candidate report, never fails** — normative references to issues, and rules asserting a delivery gate (a human decides whether the check behind each exists) |
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
 | `make check-ui-plan` | every frame or page a `ui-plan` example refers to is one that plan declares (#24 item 3) |
+| `make check-model` | the generated `domain-model/*.md` still matches its `.yaml` source — **optional**: without `modelith` it prints `NOT CHECKED` rather than passing silently, and the pre-commit hook surfaces such lines as `gate passed, with gaps:`. An orphaned `.md` whose `.yaml` is gone **fails**, because a generated artifact maintained by hand is the defect itself (#22 shape 14) |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |
 
 Every group **fails** on violation except `check-refs`, which only **reports**, because its two
@@ -322,9 +323,27 @@ Supporting files:
   *and* from the printed gap. The output prints `seen = checked + prose`, and `main()` fails when
   it audited no plans — `make check` runs it, `make test` does not, so a commit-time gate that
   judged nothing would otherwise pass every commit.
-- `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),
-  `pre-commit-stub` (installed into `.git/hooks`, branch-independent, fails closed) and
-  `classify-hook` (the single definition of which hook is ours).
+- `scripts/test_make_targets.py` — proves `make check-model` in the direction that matters.
+  Shape 14 of #22 is *a generated artifact edited by hand*, and the target's own first version
+  was a **passing skip**: an assignment ordering made `ROOT` undefined, the source path expanded
+  wrongly, and it exited 0 under a `NOT CHECKED` line on a tree where the check was possible.
+  So the suite asserts the positive statement (`up to date`), not the absence of a failure. It
+  also pins that absence is *loud*, that drift fails, that an orphaned `.md` with no `.yaml`
+  fails (shape 14 in its worse direction), and that `ROOT` is honoured — the last because the
+  pre-commit hook checks an index snapshot, not the worktree. Absence is constructed by setting
+  `MODELITH=` rather than by stripping `PATH` (which fails on a machine with a system-wide
+  install and cannot reproduce absence once the lookup has run), and the suite scrubs every
+  variable that steers `make` — `ROOT`, `MODELITH`, `MAKEFLAGS`, `MFLAGS` — so a caller's
+  exports cannot retarget or defuse it. The scrub list is **derived** from the same table that
+  builds the command line, and a test asserts every `run_make` knob is in it: keeping the two
+  lists apart shipped a version with `MODELITH` unscrubbed, so an exported `MODELITH=` broke
+  four tests and a stale `MODELITH=/path` silently redirected them.
+- `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`,
+  and on success re-reads the captured output for `NOT CHECKED` lines, printing
+  `gate passed, with gaps:` — a passing gate can still have skipped a check, and only the
+  committer's terminal is where that is worth saying), `pre-commit-stub` (installed into
+  `.git/hooks`, branch-independent, fails closed) and `classify-hook` (the single definition of
+  which hook is ours).
 - `scripts/test_hooks.py` — the hook lifecycle as tests: install, clean commit, staged and
   partial-staged violations, a branch without the gate script, a moved clone, a failed
   upgrade, uninstall, foreign hooks and a stale stub. Every one of these was a defect found
