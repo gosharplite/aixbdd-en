@@ -1,6 +1,6 @@
 ---
 name: axb-clarify-over-specs
-description: After `/axb-specify` produces `spec.md`, proactively scan the entire spec for high-impact requirement gaps; if there are still issues that affect spec correctness, acceptance criteria, or readiness, first delegate `/axb-clarify` to interview the user, then write the answers back into the spec, clean up contradictions, and refresh the checklist. Use when the user asks for post-spec requirement clarification, wants a generated spec professionally reviewed before `/plan`, or needs a spec-level clarify pass after `/axb-specify`.
+description: After `/axb-specify` produces `spec.md`, proactively scan the entire spec for high-impact requirement gaps; if there are still issues that affect spec correctness, acceptance criteria, or readiness, first delegate `/axb-clarify` to interview the user, then write the answers back into the spec, clean up contradictions, and refresh the checklist. Use when the user asks for post-spec requirement clarification, wants a generated spec professionally reviewed before `/axb-spec-by-example`, or needs a spec-level clarify pass after `/axb-specify`.
 disable-model-invocation: true
 ---
 
@@ -35,4 +35,4 @@ With `spec.md` already existing, perform proactive requirement clarification on 
 
 ## Phase 5 -- Deliver results and hand off follow-ups
 
-1. WRITE First read `templates/clarify-over-specs-report.md` and `templates/clarify-over-specs-report.example.md`, then report to the user — as they require — this round's target `SPEC_FILE`, whether `/axb-clarify` was entered, the high-impact gaps actually handled, updated sections, checklist changes, still-deferred risks, and whether the recommended next step is to proceed directly to `/plan` or run `/axb-clarify-over-specs` again later.
+1. WRITE First read `templates/clarify-over-specs-report.md` and `templates/clarify-over-specs-report.example.md`, then report to the user — as they require — this round's target `SPEC_FILE`, whether `/axb-clarify` was entered, the high-impact gaps actually handled, updated sections, checklist changes, still-deferred risks, and whether the recommended next step is to proceed directly to `/axb-spec-by-example` or run `/axb-clarify-over-specs` again later.

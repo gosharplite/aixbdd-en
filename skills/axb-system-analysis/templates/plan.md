@@ -4,23 +4,30 @@
 
 ### Document Structure (this feature)
 
-<!--
-  ⚠️ The package contents below predate the current layout — see #2.
-  Correct package root: `specs/plans/{{FEATURE_BRANCH}}/`.
-  Required contents (`spec.md`, `truth-delta.md`, `checklists/`, `features/acceptance/**`, `ui/**`)
-  are owned by axb-specify/axb-ui-plan; `contracts/` and data models live under `specs/truth/**`.
--->
-
 ```text
-specs/plans/{{FEATURE_BRANCH}}/
-├── plan.md
-├── {{ARTIFACT_FILE_1}}
-├── {{ARTIFACT_FILE_2}}
-├── {{ARTIFACT_FILE_3}}
-├── contracts/
-│   └── {{CONTRACT_FILE_NAME}}
-└── tasks.md
+specs/plans/{{PLAN_PACKAGE}}/
+├── spec.md                      # /axb-specify
+├── checklists/
+│   └── requirements.md          # /axb-specify
+├── truth-delta.md               # /axb-specify initializes; /axb-truth-delta maintains
+├── features/
+│   └── acceptance/
+│       └── *.feature            # /axb-spec-by-example
+├── ui/
+│   ├── ui-plan.md               # /axb-ui-plan
+│   └── {{UI_ARTIFACT_GLOB}}     # /axb-ui-plan: ui/*.html (web) or ui/screens/*.txt (TUI)
+├── research.md                  # /axb-technical-research
+├── plan.md                      # /axb-system-analysis (this file)
+└── tasks.md                     # /axb-tasks
 ```
+
+<!--
+  The package holds only plan-side artifacts. Truth is not package-local: API contracts live in
+  `specs/truth/contracts/**`, data models in `specs/truth/data/**`, the stack in
+  `specs/truth/techstack.md`, and executable interface features + DSL in `specs/truth/features/**`.
+  Do not create a package-local `contracts/` or `data-model.md`; those layouts predate this design.
+  A plain line-oriented CLI has no `ui/` directory (`/axb-ui-plan` is skipped for it).
+-->
 
 ### Source Structure (repository root)
 

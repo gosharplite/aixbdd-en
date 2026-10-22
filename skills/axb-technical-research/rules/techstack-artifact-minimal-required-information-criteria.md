@@ -122,7 +122,7 @@
 | Category | Adopted Technology | Purpose |
 | --- | --- | --- |
 | API testing | `vitest` | Test execution framework |
-| Manual verification | `quickstart.md` | Frontend operations |
+| Manual verification | `ui/*.html` | Frontend operations |
 
 ## Technologies Not Introduced in This Development
 

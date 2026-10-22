@@ -4,23 +4,31 @@
 
 ### Document Structure (this feature)
 
-<!--
-  ⚠️ The package tree below predates the current layout — see #2. The root line is correct,
-  but the contents are stale: `data-model.md`, `quickstart.md` and package-local `contracts/`
-  are not produced by any skill. Data models and contracts live under `specs/truth/**`.
--->
-
 ```text
 specs/plans/001-course-subscription-checkout/
-├── plan.md
+├── spec.md
+├── checklists/
+│   └── requirements.md
+├── truth-delta.md
+├── features/
+│   └── acceptance/
+│       ├── plan-browsing-and-selection.feature
+│       └── checkout-payment-and-activation.feature
+├── ui/
+│   ├── ui-plan.md
+│   ├── index.html
+│   ├── product-detail.html
+│   ├── checkout.html
+│   └── order-success.html
 ├── research.md
-├── data-model.md
-├── quickstart.md
-├── contracts/
-│   ├── checkout-api.yaml
-│   └── payment-webhook.yaml
+├── plan.md
 └── tasks.md
 ```
+
+The plan package holds plan-side artifacts only. This round's API contract is not stored here: it
+lives in `specs/truth/contracts/checkout-api.yaml`, alongside the webhook contract this feature also
+maintains. The data model lives in `specs/truth/data/**` as DBML, and the stack in
+`specs/truth/techstack.md`.
 
 ### Source Structure (repository root)
 

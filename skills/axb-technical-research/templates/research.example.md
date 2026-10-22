@@ -1,4 +1,4 @@
-# Phase 0 Research: Photo Date-Album Organization
+# Technical Research: Photo Date-Album Organization
 
 ## Decision 1: Adopt a minimal front-back separated Web architecture
 

@@ -1,4 +1,4 @@
-# Phase 0 Research: {{RESEARCH_TOPIC}}
+# Technical Research: {{RESEARCH_TOPIC}}
 
 <!--
   Add or remove "Decision" blocks per the research topic.

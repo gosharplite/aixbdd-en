@@ -1,6 +1,6 @@
 # Functional Spec: {{FEATURE_TITLE}}
 
-**Feature Branch**: `{{FEATURE_BRANCH}}`
+**Plan Package**: `specs/plans/{{PLAN_PACKAGE}}/`
 
 **Created Date**: {{CREATED_DATE}}
 
