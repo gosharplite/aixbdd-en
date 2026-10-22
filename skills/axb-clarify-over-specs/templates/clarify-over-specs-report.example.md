@@ -2,8 +2,8 @@
 
 ## Task Info
 
-- Target Spec: `specs/001-online-pvp-1a2b/spec.md`
-- Checklist: `specs/001-online-pvp-1a2b/checklists/requirements.md`
+- Target Spec: `specs/plans/001-online-pvp-1a2b/spec.md`
+- Checklist: `specs/plans/001-online-pvp-1a2b/checklists/requirements.md`
 - Entered `/axb-clarify`: Yes
 - Questions handled this round: 3
 

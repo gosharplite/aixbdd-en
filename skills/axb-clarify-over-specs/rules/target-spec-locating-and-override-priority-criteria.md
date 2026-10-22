@@ -1,3 +1,5 @@
+> **Canonical plan-package layout.** Plan packages live at `specs/plans/NNN-<slug>/`. The authoritative statement of that layout is `axb-specify`'s `rules/feature-directory-naming-and-output-placement-criteria.md`; it is restated here only as a convenience so the examples below read plainly, and that owning rule governs if the two ever disagree. During discovery, never search for a spec under a bare `specs/NNN-<slug>/` root, and never create a new plan package there. This guard constrains search and creation only — an explicitly user-specified path adopted under Rule 1 still wins, even when it sits outside the canonical root.
+
 # Rule 1 - Explicit override takes priority over any automatic inference
 
 - Level: `MUST`
@@ -11,11 +13,11 @@
 
 ```md
 User specified:
-- Target spec: `specs/003-billing/spec.md`
+- Target spec: `specs/plans/003-billing/spec.md`
 
 Decision:
-- `SPEC_FILE` = `specs/003-billing/spec.md`
-- `CHECKLIST_FILE` = `specs/003-billing/checklists/requirements.md` (if present)
+- `SPEC_FILE` = `specs/plans/003-billing/spec.md`
+- `CHECKLIST_FILE` = `specs/plans/003-billing/checklists/requirements.md` (if present)
 ```
 
 ## Bad Example
@@ -24,10 +26,10 @@ Decision:
 
 ```md
 User specified:
-- Target spec: `specs/003-billing/spec.md`
+- Target spec: `specs/plans/003-billing/spec.md`
 
 Decision:
-- Use the recently opened `specs/004-search/spec.md` instead
+- Use the recently opened `specs/plans/004-search/spec.md` instead
 ```
 
 # Rule 2 - Without explicit specification, locate the target spec automatically in a fixed order
@@ -47,10 +49,10 @@ Decision:
 ```md
 Conditions:
 - `/axb-specify` was just run this round
-- `/axb-specify` reported `SPEC_FILE = specs/001-online-pvp-1a2b/spec.md`
+- `/axb-specify` reported `SPEC_FILE = specs/plans/001-online-pvp-1a2b/spec.md`
 
 Decision:
-- Directly reuse `specs/001-online-pvp-1a2b/spec.md`
+- Directly reuse `specs/plans/001-online-pvp-1a2b/spec.md`
 - Do not look at IDE focus or recent files again
 ```
 
@@ -80,8 +82,8 @@ Decision:
 
 ```md
 This round's target:
-- `specs/001-online-pvp-1a2b/spec.md`
-- `specs/001-online-pvp-1a2b/checklists/requirements.md`
+- `specs/plans/001-online-pvp-1a2b/spec.md`
+- `specs/plans/001-online-pvp-1a2b/checklists/requirements.md`
 
 Processing:
 - Update only these two files
@@ -94,9 +96,9 @@ Processing:
 
 ```md
 This round's target:
-- `specs/001-online-pvp-1a2b/spec.md`
+- `specs/plans/001-online-pvp-1a2b/spec.md`
 
 Processing:
-- Also casually modify `specs/002-ranking/spec.md`
+- Also casually modify `specs/plans/002-ranking/spec.md`
 - Also adjust another checklist in sync
 ```
