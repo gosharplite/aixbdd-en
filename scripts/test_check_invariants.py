@@ -346,12 +346,26 @@ class SkillReferenceTests(Fixture):
             self.assertEqual(len(result.findings), 1, (name, result.findings))
             self.assertIn(name, result.findings[0].message)
 
-    def test_http_route_is_not_a_command_reference(self) -> None:
-        # `FastAPI /ws` is an endpoint, not a skill. The exemption is per token and stated.
+    def test_http_route_is_not_a_command_reference_when_allowlisted(self) -> None:
+        # `FastAPI /ws` is an endpoint, not a skill. The exemption is a line-scoped
+        # allowlist entry, not a set in the checker: only the allowlist gets the staleness
+        # test, so an in-code exemption would be one nothing keeps honest.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_http_route_without_an_allowlist_entry_is_caught(self) -> None:
+        # The same line, unexempted: the guard above must not be a global tolerance for
+        # every non-skill token, or the exemption has become a rule.
         (self.root / "skills" / "axb-real").mkdir(parents=True)
         self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
         result = self.run_check({"names"})
-        self.assertEqual(result.findings, [], result.findings)
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/ws", result.findings[0].message)
 
     def test_real_skill_passes(self) -> None:
         (self.root / "skills" / "axb-real").mkdir(parents=True)

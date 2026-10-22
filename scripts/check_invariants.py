@@ -128,7 +128,19 @@ def load_allowlist(root: Path) -> dict:
 
 
 def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, root: Path) -> bool:
-    """An allowlist entry is executable, not prose: {invariant: [{path, contains}]}."""
+    """An allowlist entry is executable, not prose: `{path, contains?, line_matches?}`.
+
+    An entry with neither predicate allowlists the whole file. An entry with both must
+    satisfy both: adding a second, more specific predicate narrows an exemption and can
+    never widen one.
+
+    `line_matches` exists because a byte-radius window cannot express "this section
+    reference is a licence citation" (#27 finding 4). The licence name sits an
+    unpredictable distance before the `§`, and only the spellings that happened to fit the
+    window were covered. A predicate tested against the whole line states what was meant,
+    and — unlike a radius — the suite's staleness test can tell whether it still matches
+    anything at all.
+    """
     try:
         key = str(path.relative_to(root))
     except ValueError:
@@ -137,8 +149,12 @@ def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, roo
         if entry.get("path") != key:
             continue
         needle = entry.get("contains")
-        if needle is None or needle in line_text:
-            return True
+        if needle is not None and needle not in line_text:
+            continue
+        pattern = entry.get("line_matches")
+        if pattern is not None and not re.search(pattern, line_text):
+            continue
+        return True
     return False
 
 
@@ -424,24 +440,19 @@ def check_token_registry(result: Result, allowlist: dict, root: Path, sources: l
 
 SKILL_REF_RE = re.compile(r"`/([a-z][a-z0-9-]*)`")
 
-# Backticked slash tokens that are NOT command references. Deliberately a small, reviewed
-# set rather than a pattern: the whole point of this invariant is that a stale skill name
-# looks exactly like a live one, so the exemption must be explicit per token.
-#
-#   ws — an HTTP route (`FastAPI /ws`), not a command.
-#
-# The test suite asserts every entry here is still referenced somewhere, so a stale
-# exemption fails rather than silently widening the check.
-NON_SKILL_SLASH_TOKENS = {"ws"}
 
-
-def check_skill_references(result: Result, root: Path, sources: list[Source]) -> None:
+def check_skill_references(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
     """Invariant 7: every backticked `/command` names a skill that exists.
 
     Deliberately **not** restricted to `axb-` names. The defects this exists to catch were
     `/plan`, `/plan-with-class-diagram` and `/skill-engineering` (#2) — none of which carry
     the prefix — so an `axb-`-only pattern would pass every one of them. That is how the
     first version of this check missed its own motivating cases.
+
+    A non-command slash token (`` `/ws` ``, a FastAPI route) is exempted through
+    `invariant_allowlist.json`, never through a set declared in this file. An in-code
+    exemption is one the staleness test cannot see, and a comment claiming otherwise is
+    worse than no comment (#27 finding 1).
     """
     skills_dir = root / "skills"
     if not skills_dir.is_dir():
@@ -453,12 +464,15 @@ def check_skill_references(result: Result, root: Path, sources: list[Source]) ->
         for number, line in enumerate(lines, start=1):
             for match in SKILL_REF_RE.finditer(line):
                 name = match.group(1)
-                if name in known or name in NON_SKILL_SLASH_TOKENS:
+                if name in known:
+                    continue
+                if allowlisted(allowlist, "skill-references", path, line, root):
                     continue
                 result.fail(
                     "skill-references",
                     f"`/{name}` is not a skill under `skills/` — a command reference must name a "
-                    "real skill; if this is not a command, add it to NON_SKILL_SLASH_TOKENS with a reason",
+                    "real skill; if this is not a command, add a `skill-references` allowlist "
+                    "entry for the line, so the exemption is staleness-checked",
                     path,
                     number,
                 )
@@ -575,7 +589,7 @@ def run(root: Path, selected: set[str] | None = None) -> Result:
         "tokens": lambda: check_token_registry(result, allowlist, root, sources),
         "refs": lambda: (check_normative_refs(result, sources), check_asserted_enforcement(result, sources)),
         "names": lambda: (
-            check_skill_references(result, root, sources),
+            check_skill_references(result, allowlist, root, sources),
             check_section_references(result, root, sources),
         ),
     }
