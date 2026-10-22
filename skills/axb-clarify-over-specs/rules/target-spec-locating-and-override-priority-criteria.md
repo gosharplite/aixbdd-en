@@ -1,3 +1,5 @@
+> **Canonical plan-package layout.** Plan packages live at `specs/plans/NNN-<slug>/`. The authoritative statement of that layout is `axb-specify`'s `rules/feature-directory-naming-and-output-placement-criteria.md`; every example in this file follows it, and this file does not restate the layout independently. During discovery, never search for a spec under a bare `specs/NNN-<slug>/` root, and never create a new plan package there. This guard constrains search and creation only — an explicitly user-specified path adopted under Rule 1 still wins, even when it sits outside the canonical root.
+
 # Rule 1 - Explicit override takes priority over any automatic inference
 
 - Level: `MUST`
@@ -33,7 +35,6 @@ Decision:
 # Rule 2 - Without explicit specification, locate the target spec automatically in a fixed order
 
 - Level: `MUST`
-- The canonical plan-package root is `specs/plans/`; every example path in this rule is `specs/plans/NNN-<slug>/…`. A bare `specs/NNN-<slug>/` directory is never a valid location, so never search or write there.
 - If there is no explicit override, the target `SPEC_FILE` must be located in a fixed order, not freely guessed on the spot:
   1. The `SPEC_FILE` just produced by this round's upstream `/axb-specify`
   2. The `spec.md` corresponding to the feature directory uniquely identifiable in the current context

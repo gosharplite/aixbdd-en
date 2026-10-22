@@ -4,8 +4,15 @@
 
 ### Document Structure (this feature)
 
+<!--
+  ⚠️ The package contents below predate the current layout — see #2.
+  Correct package root: `specs/plans/{{FEATURE_BRANCH}}/`.
+  Required contents (`spec.md`, `truth-delta.md`, `checklists/`, `features/acceptance/**`, `ui/**`)
+  are owned by axb-specify/axb-ui-plan; `contracts/` and data models live under `specs/truth/**`.
+-->
+
 ```text
-specs/{{FEATURE_BRANCH}}/
+specs/plans/{{FEATURE_BRANCH}}/
 ├── plan.md
 ├── {{ARTIFACT_FILE_1}}
 ├── {{ARTIFACT_FILE_2}}

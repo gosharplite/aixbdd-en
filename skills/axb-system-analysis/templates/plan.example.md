@@ -4,6 +4,12 @@
 
 ### Document Structure (this feature)
 
+<!--
+  ⚠️ The package tree below predates the current layout — see #2. The root line is correct,
+  but the contents are stale: `data-model.md`, `quickstart.md` and package-local `contracts/`
+  are not produced by any skill. Data models and contracts live under `specs/truth/**`.
+-->
+
 ```text
 specs/plans/001-course-subscription-checkout/
 ├── plan.md
