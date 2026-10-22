@@ -16,13 +16,30 @@ from pathlib import Path
 from typing import Iterable
 
 
+INTERFACE_KINDS = ("backend", "frontend", "cli")
+
+# Latin step keywords are conventionally separated from the sentence by
+# whitespace; CJK step keywords are conventionally written with no separator
+# (e.g. `當使用者登入`). Requiring whitespace after CJK keywords made every
+# Chinese step a non-step, so unmapped Chinese sentences passed the audit.
 STEP_RE = re.compile(
-    r"^\s*(?:Given|When|Then|And|But|\*|"
-    r"假如|假設|假定|當|那麼|而且|並且|同時|但是)\s+(.+?)\s*$"
+    r"^\s*(?:(?:Given|When|Then|And|But|\*)\s+|"
+    r"(?:假如|假設|假定|當|那麼|而且|並且|同時|但是))(.+?)\s*$"
 )
 # NOTE: the Chinese keywords above are functional Gherkin keywords (Chinese
 # locale) and must not be removed or translated; see STANDARDS.md "Project
 # Language" (STEP_RE accepts both English and Chinese keywords).
+# NOTE: whitespace after a CJK keyword is optional. Do not "simplify" this back
+# to `\s+` for both groups; that reintroduces the silent zh-TW false PASS.
+
+# Feature/Rule headings open a free-text description block. Gherkin allows no
+# steps in that region, so a keyword-initial line there is description prose.
+FEATURE_DESCRIPTION_HEADING_RE = re.compile(r"^\s*(?:Feature|Rule)\s*:")
+# These headings end the description block and open a step-bearing section.
+STEP_SECTION_HEADING_RE = re.compile(
+    r"^\s*(?:Background|Scenario Outline|Scenario|Example)\s*:"
+)
+DOCSTRING_DELIMITER = '"""'
 PLACEHOLDER_RE = re.compile(r"\{[^{}]+\}")
 SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 
@@ -54,7 +71,11 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         metavar="<features-root>",
-        help="the interface features root directory, e.g. specs/truth/features/backend",
+        help=(
+            "either one interface features root, e.g. specs/truth/features/backend, "
+            "or the shared parent specs/truth/features (every interface "
+            "subdirectory is then audited in turn)"
+        ),
     )
     return parser
 
@@ -81,6 +102,24 @@ def is_separator_row(cells: list[str]) -> bool:
     )
 
 
+def fenced_line_mask(lines: list[str]) -> list[bool]:
+    """Mark lines that sit inside (or delimit) a fenced code block.
+
+    Fenced blocks are documentation, never live DSL rows; ingesting them creates
+    phantom rows that corrupt uniqueness and matching.
+    """
+    mask: list[bool] = []
+    in_fence = False
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            mask.append(True)
+            in_fence = not in_fence
+            continue
+        mask.append(in_fence)
+    return mask
+
+
 def read_text(path: Path, errors: list[str]) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
@@ -95,11 +134,12 @@ def parse_dsl(path: Path, scope: str, errors: list[str]) -> list[DslRow]:
         return []
 
     lines = text.splitlines()
+    fenced = fenced_line_mask(lines)
     rows: list[DslRow] = []
     index = 0
     while index < len(lines):
         line = lines[index]
-        if not line.lstrip().startswith("|"):
+        if fenced[index] or not line.lstrip().startswith("|"):
             index += 1
             continue
 
@@ -112,12 +152,20 @@ def parse_dsl(path: Path, scope: str, errors: list[str]) -> list[DslRow]:
             continue
 
         index += 1
-        if index < len(lines) and lines[index].lstrip().startswith("|"):
+        if (
+            index < len(lines)
+            and not fenced[index]
+            and lines[index].lstrip().startswith("|")
+        ):
             separator = split_markdown_row(lines[index])
             if is_separator_row(separator):
                 index += 1
 
-        while index < len(lines) and lines[index].lstrip().startswith("|"):
+        while (
+            index < len(lines)
+            and not fenced[index]
+            and lines[index].lstrip().startswith("|")
+        ):
             cells = split_markdown_row(lines[index])
             line_number = index + 1
             index += 1
@@ -145,7 +193,28 @@ def parse_feature(path: Path, errors: list[str]) -> list[GherkinStep]:
         return []
 
     steps: list[GherkinStep] = []
+    in_docstring = False
+    in_description = False
     for line_number, line in enumerate(text.splitlines(), start=1):
+        stripped = line.strip()
+
+        if in_docstring:
+            if stripped.endswith(DOCSTRING_DELIMITER):
+                in_docstring = False
+            continue
+        if stripped.startswith(DOCSTRING_DELIMITER):
+            in_docstring = True
+            continue
+
+        if FEATURE_DESCRIPTION_HEADING_RE.match(line):
+            in_description = True
+            continue
+        if STEP_SECTION_HEADING_RE.match(line):
+            in_description = False
+            continue
+        if in_description:
+            continue
+
         match = STEP_RE.match(line)
         if match:
             steps.append(
@@ -244,10 +313,27 @@ def audit(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
     for row in all_rows:
         rows_by_phrase[row.phrase].append(row)
     for phrase, rows in sorted(rows_by_phrase.items()):
-        if len(rows) > 1:
+        if len(rows) < 2:
+            continue
+        scopes = [row.scope for row in rows]
+        root_scoped = [row for row in rows if row.scope == "root"]
+        repeated_in_one_scope = len(set(scopes)) != len(scopes)
+        if root_scoped or repeated_in_one_scope:
+            # Either a root row is shadowed by a module row (a lookup in that
+            # module merges root with same-module and hits twice), or one DSL file
+            # declares the same sentence twice. Both are genuinely ambiguous.
             errors.append(
                 f"DSL Sentence `{phrase}` has multiple authoritative locations: "
                 f"{format_locations(rows, root)}"
+            )
+        else:
+            # Sibling modules may each legitimately need the sentence: a lookup
+            # merges root with same-module only, so every module still resolves to
+            # exactly one row. Recommend promotion instead of failing the audit.
+            warnings.append(
+                f"the DSL Sentence `{phrase}` is defined in {len(rows)} sibling modules "
+                f"({format_locations(rows, root)}); each module still resolves to exactly one row, "
+                "but consider promoting it to the interface-root dsl.md"
             )
 
     compiled_rows = [(row, compile_phrase(row.phrase)) for row in all_rows]
@@ -292,14 +378,81 @@ def audit(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
                 f"({relative_display(row.path, root)}:{row.line}); "
                 "please have the agent judge whether it should be demoted"
             )
+        elif not modules:
+            # Asymmetric with the demotion warning above: an orphaned contract
+            # sentence is the more severe case, so it must be visible rather than
+            # silently discarded.
+            warnings.append(
+                f"the interface-root DSL row `{row.phrase}` is used by no module "
+                f"({relative_display(row.path, root)}:{row.line}); "
+                "please remove it or give it a consumer"
+            )
 
     return errors, warnings, stats
 
 
+def interface_roots(root: Path) -> list[Path]:
+    """Resolve the given root into the interface roots that should be audited.
+
+    The audit contract is per interface (`backend`, `frontend`, `cli`), because a
+    top-level directory under an interface root is a functional module while a
+    top-level directory under the shared parent is an interface. Running a
+    per-interface audit on the parent reported every correctly placed feature as
+    "not exactly one functional-module level deep", so the parent is accepted and
+    expanded here instead of being rejected.
+    """
+    if not root.is_dir():
+        return [root]
+    candidates = [root / kind for kind in INTERFACE_KINDS if (root / kind).is_dir()]
+    if not candidates:
+        return [root]
+    # If the root already has features at functional-module depth it is itself an
+    # interface root whose module happens to share an interface name; audit it
+    # directly instead of expanding.
+    for feature_path in root.rglob("*.feature"):
+        if len(feature_path.relative_to(root).parts) == 2:
+            return [root]
+    return candidates
+
+
+def audit_target(root: Path) -> tuple[list[Path], list[str], list[str], dict[str, int]]:
+    roots = interface_roots(root)
+    if len(roots) == 1 and roots[0] == root:
+        errors, warnings, stats = audit(root)
+        return roots, errors, warnings, stats
+
+    errors: list[str] = []
+    warnings: list[str] = []
+    stats = {
+        "features": 0,
+        "modules": 0,
+        "root_rows": 0,
+        "module_rows": 0,
+        "steps": 0,
+    }
+    for interface_root in roots:
+        interface_errors, interface_warnings, interface_stats = audit(interface_root)
+        label = interface_root.name
+        errors.extend(f"[{label}] {message}" for message in interface_errors)
+        warnings.extend(f"[{label}] {message}" for message in interface_warnings)
+        for key, value in interface_stats.items():
+            stats[key] += value
+    return roots, errors, warnings, stats
+
+
 def print_report(
-    root: Path, errors: list[str], warnings: list[str], stats: dict[str, int]
+    root: Path,
+    roots: list[Path],
+    errors: list[str],
+    warnings: list[str],
+    stats: dict[str, int],
 ) -> None:
     print(f"Feature / DSL topology audit: {root}")
+    if len(roots) > 1:
+        print(
+            "Interface roots audited: "
+            + ", ".join(interface_root.name for interface_root in roots)
+        )
     print(
         "Summary: "
         f"{stats['features']} features, "
@@ -327,8 +480,8 @@ def print_report(
 def main() -> int:
     args = build_parser().parse_args()
     root = args.root.expanduser().resolve()
-    errors, warnings, stats = audit(root)
-    print_report(root, errors, warnings, stats)
+    roots, errors, warnings, stats = audit_target(root)
+    print_report(root, roots, errors, warnings, stats)
     return 1 if errors else 0
 
 
