@@ -130,7 +130,7 @@ Photos should be able to be organized by date.
 - Every normative item (including story-specific and global FR, NFR, success criteria SC, and edge cases EC) must be annotated with its Verification Intent, conveying the verification path to the downstream RD planning stage:
   1. `observable → <corresponding acceptance scenario or Rule/Scenario identifier>`: verifiable externally through acceptance Gherkin by observing user behavior or black-box interfaces.
   2. `unobservable → <expected witness level>`: not directly observable by external Gherkin acceptance flows; requires unit test pins, fault-injection seams, or benchmarks at the implementation layer (e.g. `unit pin`, `fault-injection seam`).
-  3. `accepted-unwitnessed`: approved via the project decision surface as witness-exempt (must comply with the anti-washing clause and must not be abused).
+  3. `accepted-unwitnessed`: approved via the project decision surface as witness-exempt (must comply with the witness-exempt approval and anti-laundering clause, and must not be abused).
 - Leaving any normative item unclassified or without a Verification Intent annotation is strictly forbidden.
 - **PM hint responsibility and boundary**: What the PM side annotates at this stage is a coarse-grained intent hint. Based on the `spec-pm-authored` invariant, the RD side must not alter `spec.md` items on its own; instead, downstream `/axb-tasks` expands the requirements into concrete, atomic Atomic Effect Claims based on that hint and the truth-surface text, incorporating them into the Claim→Witness inventory cross-reference table.
 

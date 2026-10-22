@@ -247,15 +247,21 @@ One mid-fidelity prototype surface produced from a `UIPlan`, in the medium its i
 
 ### `Research`
 
-The technical-decision artifact produced by axb-technical-research: candidate options, adoption and rejection reasons, risks, and the resulting technology choices. Each `Research` updates the current `Techstack` truth and is reviewed before that update is accepted.
+The technical-decision artifact produced by axb-technical-research: candidate options, adoption and rejection reasons, risks, and the resulting technology choices. Each `Research` is produced together with the `Techstack` update it justifies, in one pass; there is no review gate between the two writes.
 
 **Relationships**
 
 - `Techstack` — n:1 — referenced — Each `Research` updates the current `Techstack` truth.
 
+**Attributes**
+
+| Name | Type | Description |
+| --- | --- | --- |
+| `decisions` | string | The adopted technical decisions this round, each with the options considered and the reason for adoption or rejection. These are what a `Techstack` change must be traceable to. |
+
 **Invariants**
 
-- **research-precedes-techstack** — A `Techstack` update is applied only after the `Research` producing it has been reviewed.
+- **research-justifies-techstack** — Every `Techstack` change is justified by one of the `Research`'s `decisions`, produced in the same round; a `Techstack` value never appears without that traceable decision. Review of the pair happens while the `PlanPackage` is still `active` — that is, before it becomes `delivered` — not as a gate between the two writes.
 
 ### `Skill`
 
@@ -451,14 +457,14 @@ In parallel with the PM's later steps, the `RD` researches technology, then anal
 **Steps**
 
 1. axb-technical-research writes the `Research` with options, reasons, and risks.
-2. After review, the `Research`'s decisions are applied to the `Techstack` truth.
+2. In the same pass, the `Research`'s decisions are written into the `Techstack` truth.
 3. axb-system-analysis writes the `AnalysisPlan` and orders the work into `Wave`s.
 4. A later `Wave` delegates the API interface; axb-api-plan produces the `Contract` truth.
 5. A later `Wave` delegates the data interface; axb-data-plan produces the `DataModel` truth.
 
 **Invariants touched**
 
-- **research-precedes-techstack** — A `Techstack` update is applied only after the `Research` producing it has been reviewed.
+- **research-justifies-techstack** — Every `Techstack` change is justified by one of the `Research`'s `decisions`, produced in the same round; a `Techstack` value never appears without that traceable decision. Review of the pair happens while the `PlanPackage` is still `active` — that is, before it becomes `delivered` — not as a gate between the two writes.
 - **techstack-complete** — The `Techstack` represents the complete current technology stack, not just the latest round's delta.
 - **analysis-plan-never-writes-truth** — An `AnalysisPlan` orchestrates analysis only; it never creates or modifies a `TruthArtifact`.
 - **wave-covers-interfaces** — Every interface identified by an `AnalysisPlan` is either delegated to a planner in at least one `Wave` or carried forward to its contract owner at delivery.
@@ -517,7 +523,7 @@ A later round modifies existing behavior slightly and adds one feature: a fresh 
 
 ### Implement to green
 
-axb-implement executes the task list in constraint-ordered batches, writing step definitions straight from the DSL implementation semantics until every test is green.
+axb-implement executes the task list in constraint-ordered batches. It writes the test layer's step definitions itself for alignment tasks, but delegates the per-feature green and refactor legs to axb-bdd, until every test is green.
 
 **Actors:** RD, Skill
 
@@ -526,7 +532,8 @@ axb-implement executes the task list in constraint-ordered batches, writing step
 1. axb-tasks has produced the `Task`s: alignment work first, then per-feature green and refactor.
 2. Implementation completes the current batch and marks those `Task`s done before starting the next.
 3. For each step definition, the merged `DSL` lookup resolves exactly one `DSLRow` and its implementation semantics are followed.
-4. Focused tests run until the feature's scenarios are green; refactor happens only under green protection.
+4. `[BDD-GREEN]` and `[BDD-REFACTOR]` `Task`s are delegated to axb-bdd with the test scope their task declares; axb-implement does not write those step definitions or product code itself.
+5. Focused tests run until the feature's scenarios are green; refactor happens only under green protection.
 
 **Invariants touched**
 

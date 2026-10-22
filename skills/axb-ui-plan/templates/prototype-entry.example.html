@@ -137,7 +137,7 @@
       <label for="primaryInput">Search keyword</label>
       <input id="primaryInput" placeholder="e.g. thermos bottle, storage box, desk lamp" />
       <button id="primaryAction">Start browsing products</button>
-      <div class="hint">Enter a product name or category, then go to the product list page and view recommended results.</div>
+      <div class="hint">Enter a product name or category, then open a matching product to view its details.</div>
       <div class="error" id="errorMessage"></div>
     </section>
   </main>
@@ -154,7 +154,7 @@
         return;
       }
       errorMessage.textContent = "";
-      window.location.href = "product-list.html";
+      window.location.href = "product-detail.html";
     });
   </script>
 </body>

@@ -132,7 +132,7 @@
 ```md
 | Action | Truth Spec | Change Summary | Reason |
 | --- | --- | --- | --- |
-| MODIFY | `specs/truth/features/backend/room-chat/dsl.md` → `specs/truth/features/backend/dsl.md` -> `Then: this operation was rejected` | Authoritative location moved, semantics unchanged. | A second module starts using the exact same contract. |
+| MODIFY | `specs/truth/features/backend/room-chat/dsl.md` -> `specs/truth/features/backend/dsl.md` -> `Then: this operation was rejected` | Authoritative location moved, semantics unchanged. | A second module starts using the exact same contract. |
 ```
 
 ## Bad Example
