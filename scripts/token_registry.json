@@ -1,0 +1,43 @@
+{
+  "$comment": [
+    "The single enumeration of this repository's fixed DSL contract vocabulary.",
+    "Every token here is declared **fixed** by skills/axb-gherkin-and-dsl/STANDARDS.md's",
+    "'Project Language' section, meaning a project language declaration must not translate it.",
+    "",
+    "This file is the authority. Other surfaces (the Project Language table, axb-tasks'",
+    "row-reading bullets, axb-system-analysis' owner list) may name tokens because their",
+    "readers need them without a round-trip, but they do not define them — see issue #12.",
+    "",
+    "Two directions are checked by scripts/check_invariants.py:",
+    "  completeness  every token below appears verbatim in its defining section;",
+    "  consistency   wherever a token is named elsewhere it uses the canonical spelling.",
+    "",
+    "JSON, not YAML, so the checker stays stdlib-only. The repo's .yaml files belong to",
+    "modelith, an external tool, and reading them here would add a dependency."
+  ],
+  "definingFile": "skills/axb-gherkin-and-dsl/STANDARDS.md",
+  "tokens": [
+    { "token": "DSL Sentence", "section": "4. DSL Required Fields", "kind": "meta-schema" },
+    { "token": "Gherkin Params", "section": "4. DSL Required Fields", "kind": "meta-schema" },
+    { "token": "Data Table Params", "section": "4. DSL Required Fields", "kind": "meta-schema" },
+    { "token": "Default Params", "section": "4. DSL Required Fields", "kind": "meta-schema" },
+    { "token": "How", "section": "5.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "State landing", "section": "5.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Write-back", "section": "5.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "No-check", "section": "5.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Must-check", "section": "5.2 Then Granularity", "kind": "then-marker" },
+    { "token": "Presented Result", "section": "5.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Authoritative State", "section": "5.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Re-read Confirmation", "section": "5.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Cross-Perspective", "section": "5.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Should Not Happen", "section": "5.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Invocation", "section": "7.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Working state", "section": "7.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Landing", "section": "7.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Captured outputs", "section": "7.1 Given / When Granularity", "kind": "given-when-label" },
+    { "token": "Stdout", "section": "7.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Stderr", "section": "7.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Exit Code", "section": "7.2 Then Granularity", "kind": "then-channel" },
+    { "token": "Filesystem State", "section": "7.2 Then Granularity", "kind": "then-channel" }
+  ]
+}

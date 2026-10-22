@@ -1,0 +1,42 @@
+{
+  "$comment": [
+    "Executable allowlist for scripts/check_invariants.py.",
+    "",
+    "Prose allowlists rot — issue #12 records a case where a recorded list was written from",
+    "memory and omitted three of four real hits — so this is data the script reads, and the",
+    "script's own test suite asserts every entry is still needed.",
+    "",
+    "Shape: { \"<invariant>\": [ { \"path\": \"<repo-relative>\", \"contains\": \"<substring, optional>\" } ] }",
+    "Omitting `contains` allowlists the whole file for that invariant.",
+    "",
+    "Every entry below is a MENTION-TO-FORBID: the text names a forbidden shape in order to",
+    "forbid it. Dropping the mention would delete the rule it carries."
+  ],
+
+  "specs-roots": [
+    {
+      "path": "skills/axb-clarify-over-specs/rules/target-spec-locating-and-override-priority-criteria.md",
+      "contains": "never search for a spec under a bare"
+    }
+  ],
+
+  "truth-paths": [
+    {
+      "path": "skills/axb-system-analysis/templates/plan.md",
+      "contains": "Do not create a package-local"
+    }
+  ],
+
+  "plan-package-prefix": [
+    {
+      "path": "skills/axb-specify/rules/feature-directory-naming-and-output-placement-criteria.md",
+      "contains": "This rule owns the `{{PLAN_PACKAGE}}` placeholder convention"
+    },
+    {
+      "path": "README.md",
+      "contains": "how `{{PLAN_PACKAGE}}` drifted before #11"
+    }
+  ],
+
+  "token-registry": []
+}
