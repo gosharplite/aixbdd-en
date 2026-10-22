@@ -6,7 +6,7 @@ This module's specific sentences. For cross-module shared sentences see [`../dsl
 
 | DSL Sentence | Gherkin Params | Data Table Params | Default Params | Playwright BDD Implementation Semantics |
 | --- | --- | --- | --- | --- |
-| `the cart already contains the following items:` | none | Supported:`Product Code` (required, string), `Unit Price` (required, integer), `Quantity` (required, integer) | `player`: the scenario's only player; the cart belongs to them. A scenario with more than one player must name the owner through a Gherkin parameter instead. | `use fixtures`: create the cart contents through the cart fixture. `Arrange source`: the backend cart truth. `write-back data`: the frontend's initial cart state. `No-check`: the checkout page's rendered summary — this step only arranges the cart. |
+| `the cart already contains the following items:` | none | Supported:`Product Code` (required, string), `Unit Price` (required, integer), `Quantity` (required, integer) | `player`: the scenario's only player, resolved from the scenario text per §4.3; the cart belongs to them. | `use fixtures`: create the cart contents through the cart fixture. `Arrange source`: the backend cart truth. `write-back data`: the frontend's initial cart state. `No-check`: the checkout page's rendered summary — this step only arranges the cart. |
 | `the platform has a usable discount code "{discount-code}"` | `discount-code`: string; the discount code text. | Not supported | none | `use fixtures`: prepare an applicable discount code through the discount fixture. `Arrange source`: the backend discount code truth. `write-back data`: the code the next When step types. `No-check`: the cart contents and the order summary. |
 
 ## When Sentences

@@ -98,34 +98,51 @@ kind's header, and the suffix is what makes that reference unambiguous.
 
 ### 4.3 Default Parameter Column
 
-**What this column is.** A `Default Params` entry records a value the **step definition** binds when
-the Gherkin sentence does not supply it. The column exists so a reader does not have to guess what a
-step assumes — not to list implementation detail. Keep only the values where, if unstated, the AI
-would easily guess wrong.
+**What this column is.** A `Default Params` entry records a value the **step definition** binds
+itself. The Gherkin sentence never supplies it — there is no placeholder for it (§4.1) and no
+DataTable column (§4.2). The column exists so a reader does not have to guess what a step assumes, not
+to list implementation detail.
 
-**An entry is one of two kinds, and it must be clear which:**
+**An entry is one of two kinds, and the cell must make clear which:**
 
-- **A constant** — a fixed fixture value the step always uses, e.g. `discount-amount` is an integer
-  constant 100. Write the value, not the word "default": a constant is not a default, and calling it
-  one suggests an override mechanism that does not exist.
+- **A constant** — a fixed fixture value the step always uses, e.g. `discount-amount` is a constant
+  100. Write the value, not the word "default": a constant is not a default, and calling it one
+  suggests an override mechanism that does not exist.
 - **A step-context binding** — the name of something the step looks up from the test's running context,
-  e.g. `target-cart` is the cart of the player this scenario is acting as. Say *what it resolves to and
-  from what*, because the name alone does not.
+  e.g. `target-cart` is the cart the scenario is acting on. State *what it resolves to* **and what
+  establishes it**: "the cart created by the preceding Given", not just "the cart".
 
-**Entries are not scenario-overridable.** A scenario changes a default only by using a sentence whose
-Gherkin parameters carry a placeholder for that value (§4.1). Writing "defaults to X" where X has no
-placeholder describes a knob no scenario can turn. If a value genuinely should vary per scenario, it
-needs a Gherkin parameter, not a default.
+**Entries are not scenario-overridable.** A scenario changes a value only by using a sentence whose
+Gherkin parameters carry a placeholder for it (§4.1) or whose DataTable carries it (§4.2). The test is
+on the **parameter, not the value**: a parameter that appears in no placeholder and no DataTable column
+is not scenario-settable, whatever its value happens to mention. If a value genuinely should vary per
+scenario, it needs a parameter or a table column — not a default.
 
-**A context binding must resolve from state established before this step runs.** A binding that refers
-to state *this step itself produces* is circular and non-conforming: the cart-creating step cannot
-default its owner to "the current cart owner", because the cart does not exist until the step runs.
-State the binding in terms of what the scenario established earlier — e.g. the scenario's only player,
-with a rule for what happens when more than one player appears.
+**A binding resolves from state established before the step runs**, and one case needs saying
+explicitly because the example tree exercises it: a step may run **before** the scenario names the
+entity it needs. In that case the binding may resolve from the scenario's own text **provided exactly
+one candidate exists** — e.g. the scenario names a single player, so "the scenario's player" is
+unambiguous — and the step definition defers resolution to the point that player exists. This is
+licensed, not implied: implementations do exactly this, and a rule that forbids it while every example
+depends on it is a rule that gets ignored.
 
-**Do not put internal implementation decisions here.** `wait snapshot count = 1` is a frontend
-implementation detail, not a Gherkin-readable default; `invalid match code = "12"` is, because it
-changes what the step means.
+What is **not** conforming is a binding that refers to state *the step itself produces*: the
+cart-creating step cannot resolve its owner from "the current cart owner", because the cart does not
+exist until the step runs. That is circular in the running context, not merely later-named.
+
+**When more than one candidate exists, the sentence must carry a parameter instead.** That is a real
+edit, not a reference to one: a multi-player scenario needs an **owner-naming variant of the cart
+sentence, with its own DSL row** — the existing sentence declares no `player` parameter, so no scenario
+can pass one to it.
+
+**An entry never duplicates another row's ownership.** If a value is set by another sentence — a
+platform rule passed through a DataTable, say — this row binds *that* state rather than restating the
+value as its own constant; two adjacent rows claiming one number is a contradiction, and the
+step-definition author has no way to choose.
+
+**Do not put internal implementation decisions here.** Wait tuning belongs to frontend semantics as
+§6.2's `wait conditions` label, not in Gherkin-readable defaults; by contrast
+`invalid match code = "12"` is a legitimate constant, because it changes what the step means.
 
 ## 5. Backend DSL Implementation Semantics
 
