@@ -126,10 +126,10 @@ All initial files were translated from aixbdd-tmg's original Traditional Chinese
   the §2/§3 defaults); it remains project-declarable, so projects may still declare any language.
 - **Fixed DSL contract tokens are English**: `DSL Sentence`, `Gherkin Params`, `Data Table Params`,
   `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, the §5.1 Given / When
-  sub-labels (`How`, `State landing`, `Write-back`, `No-check`), and the §5.2 Then channels
+  sub-labels (`How`, `State landing`, `Write-back`, `No-check`), the §5.2 Then channels
   (`Presented Result`, `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`,
-  `Should Not Happen`). The examples additionally use a `Must-check` Then label that `STANDARDS.md`
-  §5.2 **does not yet define** — a known gap tracked as #5, tagged in place in §5.2.
+  `Should Not Happen`), and the `Must-check` marker that opens every Then cell in every interface kind
+  (§5.2 defines it once; §6.2 and §7.2 use it).
 - **The CLI interface kind has its own fixed vocabulary**, defined in `STANDARDS.md` §7.1 and §7.2.
   Those two subsections are the **single enumeration** — this README deliberately does not restate the
   labels, because three partial lists of one vocabulary is how `{{PLAN_PACKAGE}}` drifted before #11
