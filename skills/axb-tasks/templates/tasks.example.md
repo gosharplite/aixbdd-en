@@ -77,8 +77,9 @@
 - Each sentence belongs to exactly one authoritative `dsl.md`: the same-module `specs/truth/features/{interface}/{module}/dsl.md`, or the interface root `specs/truth/features/{interface}/dsl.md`. Do not scan other modules.
 - This round's sentences all live in the same module `specs/truth/features/backend/room-chat/dsl.md`. This round has no sentences from the interface root `specs/truth/features/backend/dsl.md`.
 - How to read: match the task title's sentence to that row in the file, taking `StepDef Implementation Semantics` as the test code semantics.
-  - Backend rows: for Given / When read `How`, `State landing`, `Write-back`; for Then read `Must-check` (`Presented Result`, `Authoritative State`, `Re-read Confirmation`).
-  - CLI rows: the row's own labels replace those — Given / When `Invocation`, `Working state`, `Landing`, `Captured outputs`; Then the `STANDARDS.md` §7.2 channels (`Stdout`, `Stderr`, `Exit Code`, `Filesystem State`, `Re-read Confirmation`, `Should Not Happen`). Do not look for the backend labels in a CLI row.
+  - Every Then row in every interface kind opens with `Must-check` (`STANDARDS.md` §5.2), which marks the assertions that follow as mandatory. It is a marker, not a channel.
+  - Backend rows: for Given / When read `How`, `State landing`, `Write-back`; for Then read the §5.2 channels (`Presented Result`, `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`, `Should Not Happen`).
+  - CLI rows: the row's own labels replace the backend ones — Given / When `Invocation`, `Working state`, `Landing`, `Captured outputs`; Then the §7.2 channels (`Stdout`, `Stderr`, `Exit Code`, `Filesystem State`, `Re-read Confirmation`, `Should Not Happen`). Do not look for the backend labels in a CLI row.
   - Frontend rows: the `Playwright BDD Implementation Semantics` column per `STANDARDS.md` §6.
 - `truth-delta.md` only tells whether this sentence is ADD / MODIFY / DELETE. Semantics follow that `dsl.md` row; do not invent from feature wording or old stepdefs.
 
