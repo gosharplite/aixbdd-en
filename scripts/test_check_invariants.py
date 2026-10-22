@@ -401,10 +401,23 @@ class SectionReferenceTests(Fixture):
         self.assertEqual(result.findings, [])
 
     def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
-        # `Apache-2.0 §4(d)` refers to the licence, not to STANDARDS.md §4.
-        self.write("README.md", "Required by Apache-2.0 §4(d), verbatim.\n")
+        # `§11` is deliberately a number `MINIMAL_STANDARDS` does not declare. The first
+        # version of this test cited `§4(d)` — and `## 4.` exists in the fixture — so it
+        # passed with the exclusion deleted and pinned nothing (#27 finding 2). The number
+        # has to be absent from the fixture, or the test cannot tell "excluded" from
+        # "happens to exist", and the exclusion ships unpinned.
+        self.write("README.md", "Required by Apache-2.0 §11(x), verbatim.\n")
         result = self.run_check({"names"})
         self.assertEqual(result.findings, [], result.findings)
+
+    def test_the_same_section_number_unprefixed_is_caught(self) -> None:
+        # The control for the test above. Without it the licence test could be passing
+        # because `§11` resolves, or because section references are not checked at all —
+        # the same indistinguishability that made the original vacuous.
+        self.write("skills/x/SKILL.md", "See §11(x) for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§11", result.findings[0].message)
 
 
 class NormativeRefTests(Fixture):
