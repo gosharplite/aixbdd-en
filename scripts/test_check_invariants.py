@@ -11,6 +11,7 @@ small repository carrying its own registry and allowlist.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -456,29 +457,93 @@ class AllowlistTests(Fixture):
         self.assertEqual(len(result.findings), 1, result.findings)
 
 
+def stale_allowlist_entries(root: Path) -> list[str]:
+    """Every allowlist entry that no longer matches live text, in every shape it can take.
+
+    Extracted rather than inlined so the scan itself can be tested: an untestable guard is
+    how #27 finding 1 happened — the comment claimed this discipline while nothing enforced
+    it. `AreTheGuardsThemselvesGuarded` below drives this helper over fixtures that are
+    stale on purpose.
+    """
+    allowlist = checker.load_allowlist(root)
+    stale: list[str] = []
+    for invariant, entries in allowlist.items():
+        if invariant.startswith("$"):
+            continue
+        for entry in entries:
+            path = root / entry["path"]
+            if not path.is_file():
+                stale.append(f"{invariant}: missing file {entry['path']}")
+                continue
+            text = path.read_text(encoding="utf-8")
+            needle = entry.get("contains")
+            if needle is not None and needle not in text:
+                stale.append(f"{invariant}: {entry['path']} no longer contains {needle!r}")
+            pattern = entry.get("line_matches")
+            if pattern is not None and not any(
+                re.search(pattern, line) for line in text.splitlines()
+            ):
+                stale.append(f"{invariant}: {entry['path']} has no line matching {pattern!r}")
+    return stale
+
+
 class RepoAllowlistStillNeededTests(unittest.TestCase):
     """Every entry in the real allowlist must still match something.
 
     An entry that stops matching is a stale exemption — and a stale exemption silently
-    widens what the check tolerates. This is the executable-baseline criterion from #12.
+    widens what the check tolerates. This is the executable-baseline criterion from #12,
+    and since #27 finding 3 it is the *only* exemption mechanism, so it now covers the
+    slash-token and licence exemptions too.
     """
 
     def test_every_allowlist_entry_matches_live_text(self) -> None:
-        root = checker.DEFAULT_ROOT
-        allowlist = checker.load_allowlist(root)
-        stale: list[str] = []
-        for invariant, entries in allowlist.items():
-            if invariant.startswith("$"):
-                continue
-            for entry in entries:
-                path = root / entry["path"]
-                if not path.is_file():
-                    stale.append(f"{invariant}: missing file {entry['path']}")
-                    continue
-                needle = entry.get("contains")
-                if needle is not None and needle not in path.read_text(encoding="utf-8"):
-                    stale.append(f"{invariant}: {entry['path']} no longer contains {needle!r}")
-        self.assertEqual(stale, [], "stale allowlist entries")
+        self.assertEqual(
+            stale_allowlist_entries(checker.DEFAULT_ROOT), [], "stale allowlist entries"
+        )
+
+
+class AreTheGuardsThemselvesGuarded(Fixture):
+    """The staleness scan must be able to fail, in both entry shapes.
+
+    #27 finding 2 is the general lesson: an exclusion pinned by a test that passes with the
+    exclusion deleted is pinned by nothing. The same question applies to this scan, so each
+    shape gets a fixture that is stale on purpose and must be named.
+    """
+
+    def test_stale_contains_entry_is_reported(self) -> None:
+        self.write("skills/x/SKILL.md", "no route mentioned here\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("/ws", stale[0])
+
+    def test_stale_line_matches_entry_is_reported(self) -> None:
+        self.write("skills/x/SKILL.md", "nothing licence-shaped on this line\n")
+        self._write_allowlist(
+            {"section-references": [{"path": "skills/x/SKILL.md", "line_matches": "Apache-\\d"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("Apache", stale[0])
+
+    def test_entry_pointing_at_a_missing_file_is_reported(self) -> None:
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/gone/SKILL.md", "contains": "`/ws`"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("missing file", stale[0])
+
+    def test_a_live_entry_is_not_reported(self) -> None:
+        # The negative fixture: without it the scan could report everything and pass all
+        # three tests above while being useless.
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        self.assertEqual(stale_allowlist_entries(self.root.resolve()), [])
 
 
 if __name__ == "__main__":
