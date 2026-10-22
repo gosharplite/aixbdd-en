@@ -481,12 +481,19 @@ def check_skill_references(result: Result, allowlist: dict, root: Path, sources:
 SECTION_REF_RE = re.compile(r"§(\d+(?:\.\d+)?)")
 
 
-def check_section_references(result: Result, root: Path, sources: list[Source]) -> None:
+def check_section_references(
+    result: Result, allowlist: dict, root: Path, sources: list[Source]
+) -> None:
     """Invariant 8: every `§N` naming a STANDARDS.md section resolves to a real heading.
 
-    Would have caught #6 finding 2. One narrow exclusion, stated rather than hidden: a `§`
-    preceded by a licence identifier (`Apache-2.0 §4(d)`) refers to that licence, not to the
-    standard. `STANDARDS.md` is skipped because it cites its own section numbers in prose.
+    Would have caught #6 finding 2. A `§` on a line that cites a licence (`Apache-2.0
+    §4(d)`) refers to that licence, not to the standard; the exemption is a
+    `line_matches` allowlist entry, not a window around the `§`. The window it replaced
+    was 16 characters tied to the literal `Apache-N.N ` spelling, so `Apache License 2.0
+    §11(x)` and `Apache-2.0, §11(x)` — the same citation, spelled differently — failed the
+    gate falsely (#27 finding 4).
+
+    `STANDARDS.md` is skipped because it cites its own section numbers in prose.
     """
     defining = root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
     if not defining.is_file():
@@ -500,11 +507,10 @@ def check_section_references(result: Result, root: Path, sources: list[Source]) 
             continue
         for number, line in enumerate(lines, start=1):
             for match in SECTION_REF_RE.finditer(line):
-                before = line[max(0, match.start() - 16) : match.start()]
-                if re.search(r"Apache-[\d.]+\s*$", before):
-                    continue
                 section = match.group(1)
                 if section in known:
+                    continue
+                if allowlisted(allowlist, "section-references", path, line, root):
                     continue
                 result.fail(
                     "section-references",
@@ -590,7 +596,7 @@ def run(root: Path, selected: set[str] | None = None) -> Result:
         "refs": lambda: (check_normative_refs(result, sources), check_asserted_enforcement(result, sources)),
         "names": lambda: (
             check_skill_references(result, allowlist, root, sources),
-            check_section_references(result, root, sources),
+            check_section_references(result, allowlist, root, sources),
         ),
     }
     for name, check in checks.items():

@@ -54,5 +54,13 @@
       "path": "skills/axb-implement/rules/definition-of-done-verification-and-writeback-criteria.md",
       "contains": "`/ws`"
     }
+  ],
+
+  "section-references": [
+    {
+      "$note": "A `§` on a line naming a licence refers to that licence, not to STANDARDS.md. Line-scoped on purpose: the 16-char lookbehind this replaced required the literal `Apache-N.N ` spelling, so `Apache License 2.0 §11(x)` and `Apache-2.0, §11(x)` failed the gate falsely. The staleness test proves the pattern still matches a line here; it does not prove the exemption is load-bearing, because today's only citation (`§4(d)`) resolves against STANDARDS.md anyway.",
+      "path": "README.md",
+      "line_matches": "(?:Apache|MIT|BSD|GPL|Mozilla|Creative Commons)[^§]*§"
+    }
   ]
 }
