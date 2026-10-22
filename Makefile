@@ -29,13 +29,29 @@ SCRIPTS := scripts
 CHECKER := $(SCRIPTS)/check_invariants.py
 EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 
+# `modelith` renders domain-model/aixbdd.modelith.yaml to its sibling .md. It is an
+# external Go binary, and scripts/token_registry.json:16 records that this repository
+# declined to depend on it — so this check is OPTIONAL and says so out loud when the tool
+# is missing. A skipped check that prints nothing reads as a passing one; that is the
+# "dropped-but-unprinted" failure the README's coverage rule exists to prevent.
+MODELITH := $(shell command -v modelith 2>/dev/null)
+
 # The tree the checkers inspect. Defaults to this worktree; the pre-commit hook points it
 # at a snapshot of the git *index*, because a commit is built from the index, not from the
 # files on disk. Tooling always comes from this worktree; only the inspected tree moves.
 ROOT ?= .
 
+# Recursive (`=`, not `:=`) and defined BELOW `ROOT`, both on purpose. The first version
+# sat above the `ROOT ?= .` line with `:=`, so ROOT was undefined when it expanded: the
+# path became `/domain-model/aixbdd.modelith.yaml`, the target reported the source as not
+# found, and it exited 0 under a `NOT CHECKED` line — a passing skip on a tree where the
+# check was perfectly possible. `scripts/test_make_targets.py` pins the positive statement
+# ("up to date") rather than the absence of a failure, because only that distinguishes a
+# real check from that shape of silent one.
+MODEL_SOURCE = $(ROOT)/domain-model/aixbdd.modelith.yaml
+
 .PHONY: help check check-paths check-tokens check-names check-refs check-params check-ui-plan \
-        check-audit check-python test install-hooks uninstall-hooks
+        check-model check-audit check-python test install-hooks uninstall-hooks
 
 help: ## List targets
 	@echo "Targets for developing aixbdd-en (not for skill users):"
@@ -66,10 +82,24 @@ check-params: check-python ## STANDARDS §4.3: every Default Params cell conform
 check-ui-plan: check-python ## #24 item 3: every frame/page a ui-plan refers to is declared
 	@$(RUN) $(SCRIPTS)/check_ui_plan_outputs.py --root $(ROOT)
 
+# No `check-python` dependency: this target runs a Go binary, not the interpreter, and
+# depending on one it does not use would make its failure messages lie about the cause.
+check-model: ## #22 shape 14: the generated domain-model .md still matches its .yaml
+	@if [ -z "$(strip $(MODELITH))" ]; then \
+		echo "NOT CHECKED: modelith is not installed, so the generated domain-model .md was NOT verified"; \
+		echo "  install modelith, or run 'modelith render domain-model/aixbdd.modelith.yaml' by hand"; \
+		exit 0; \
+	fi; \
+	if [ ! -f "$(MODEL_SOURCE)" ]; then \
+		echo "NOT CHECKED: $(MODEL_SOURCE) not found, so there is no source to render-check"; \
+		exit 0; \
+	fi; \
+	modelith render --check "$(MODEL_SOURCE)"
+
 check-audit: check-python ## DSL topology audit of this repo's own example tree
 	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(ROOT)/$(EXAMPLES)
 
-check: check-paths check-tokens check-names check-refs check-params check-ui-plan check-audit ## Run everything (default gate)
+check: check-paths check-tokens check-names check-refs check-params check-ui-plan check-model check-audit ## Run everything (default gate)
 
 test: check-python ## Run the checkers' own test suites (invariants, params, ui-plan, hook lifecycle)
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
