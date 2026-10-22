@@ -177,7 +177,7 @@ class LabelledScreenLineTests(Fixture):
 
 
 class ScopeTests(Fixture):
-    def test_a_template_with_a_placeholder_is_skipped_not_failed(self) -> None:
+    def test_a_template_with_a_placeholder_is_skipped(self) -> None:
         self.write(
             "ui-plan.terminal.md",
             TERMINAL_PLAN.format(
@@ -190,6 +190,41 @@ class ScopeTests(Fixture):
         self.assertEqual(report.violations, [])
         self.assertEqual([p.name for p in report.skipped], ["ui-plan.terminal.md"])
         self.assertEqual(report.plans, [])
+
+    def test_a_stray_placeholder_outside_the_declaration_does_not_exempt_the_plan(self) -> None:
+        """The skip is scoped to the declaration line (#27's "an exemption that widens").
+
+        A filled plan that kept one `{{…}}` in unrelated scaffolding — a leftover template
+        slot in a screen section — must still be audited. Searching the whole document,
+        which this check did first, silently exempted it: exactly the widening shape the
+        exclusion was meant to prevent.
+        """
+        text = (
+            "## Screens & Flows\n\n"
+            "### 1. `Startup / Edit Frame`\n\n"
+            "- Corresponding frame file: `ui/screens/entry.txt`\n\n"
+            "### 2. `Other Frame`\n\n"
+            "- Corresponding frame file: `ui/screens/99-other.txt`\n"
+            "- Main purpose: `{{MAIN_PURPOSE_SLOT_NOT_YET_FILLED}}`\n\n"
+            "## Prototype Output Planning\n\n"
+            "- Planned output files: `ui/screens/entry.txt`\n"
+        )
+        self.write("ui-plan.terminal.example.md", text)
+        report = self.run_check()
+        self.assertEqual(report.skipped, [])
+        self.assertEqual([v.reference for v in report.violations], ["ui/screens/99-other.txt"])
+
+    def test_a_plan_with_no_declaration_line_fails_rather_than_passes(self) -> None:
+        # "Nothing declared" must not be grandfathered in as "nothing to check".
+        text = (
+            "## Screens & Flows\n\n"
+            "### 1. `Startup / Edit Frame`\n\n"
+            "- Corresponding frame file: `ui/screens/entry.txt`\n"
+        )
+        self.write("ui-plan.terminal.example.md", text)
+        violations = self.run_check().violations
+        self.assertEqual([v.reference for v in violations], ["ui/screens/entry.txt"])
+        self.assertIn("none declared", violations[0].detail)
 
     def test_prose_target_is_counted_not_failed(self) -> None:
         # A modal overlay whose target is "the frame it was opened from" names a state,
@@ -210,22 +245,41 @@ class ScopeTests(Fixture):
 
 
 class RealTreeTests(unittest.TestCase):
-    """The shipped tree must pass, and must have been read for it to mean anything."""
+    """The shipped tree must pass, and must have been read for it to mean anything.
+
+    The counts are this tree's, deliberately: a glob that stops matching, a skip that
+    widens, or a parser that stops reading a section should fail the suite rather than let
+    the gate pass over nothing. Updating the example tree means updating them — that is the
+    notice working, not an inconvenience.
+    """
+
+    def setUp(self) -> None:
+        self.report = plan_outputs.run(plan_outputs.DEFAULT_ROOT)
 
     def test_the_shipped_examples_conform(self) -> None:
-        report = plan_outputs.run(plan_outputs.DEFAULT_ROOT)
         self.assertEqual(
-            [f"{v.path.name}:{v.line}: {v.reference}" for v in report.violations], []
+            [f"{v.path.name}:{v.line}: {v.reference}" for v in self.report.violations], []
         )
 
     def test_the_check_is_not_vacuous(self) -> None:
-        # A check that reads nothing passes trivially. These numbers are the tree's, and
-        # they are here so a glob that stops matching fails the suite instead of the gate.
-        report = plan_outputs.run(plan_outputs.DEFAULT_ROOT)
-        self.assertEqual(len(report.plans), 2, report.plans)
-        self.assertEqual(len(report.skipped), 2, report.skipped)
-        self.assertEqual(report.declared, 8)
-        self.assertEqual(report.references, 29)
+        self.assertEqual(len(self.report.plans), 2, self.report.plans)
+        self.assertEqual(self.report.declared, 8)
+        self.assertEqual(self.report.references, 29)
+
+    def test_the_skipped_set_cannot_widen_unnoticed(self) -> None:
+        # A skip is an exemption. Naming the exact set is what stops a future template — or
+        # a filled plan that acquires a placeholder — from being exempted by accident.
+        self.assertEqual(
+            [p.name for p in self.report.skipped], ["ui-plan.md", "ui-plan.terminal.md"]
+        )
+
+    def test_the_prose_count_is_measured_not_assumed(self) -> None:
+        # The count exists to keep a coverage gap visible. If `prose_count` silently
+        # returned 0 the printed gap would read as "none", which is a worse outcome than
+        # failing: this pins it to the two prose endpoints the tree actually has (the
+        # modal overlay's "the frame the overlay was opened from", and the
+        # no-transition line in the terminal plan's State Transition List).
+        self.assertEqual(self.report.prose, 2)
 
 
 if __name__ == "__main__":

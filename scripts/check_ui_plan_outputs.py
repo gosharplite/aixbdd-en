@@ -26,8 +26,8 @@ defect behind it, and mixing the two would let a failure name either end.
   `Corresponding frame file:`), the `Target Frame` column of a `Keybinding Map`, and the
   endpoints of every transition in a `State Transition List`.
 
-A plan whose declared list is still a `{{PLACEHOLDER}}` (i.e. a template, not a filled
-plan) cannot be audited and is skipped by name, not by accident.
+A plan whose `Planned output files:` line still carries a `{{PLACEHOLDER}}` (i.e. a
+template, not a filled plan) cannot be audited and is skipped — see "Exemptions" below.
 
 ## What is deliberately not read
 
@@ -44,6 +44,25 @@ plan) cannot be audited and is skipped by name, not by accident.
   a `State Transition List` line may state that no transition happens. Neither is
   machine-resolvable, and failing on them would delete the check. They are counted and
   printed instead, so the coverage gap is visible rather than silent.
+
+## Exemptions
+
+This module's review on #27 established the rule this file is held to: **every exemption
+is staleness-guarded, and none is expressible as a byte radius.** There are two, and
+neither is a window:
+
+1. **A template whose declared line carries a placeholder.** The condition is read from
+   the declaration line *itself*, not from the file: earlier this check searched the whole
+   document, which silently skipped any filled plan that kept one leftover `{{…}}` in
+   unrelated scaffolding — the exemption quietly widening, which is the failure it was
+   supposed to prevent. It is not an `invariant_allowlist.json` entry because a hard-coded
+   path list would go stale in the *noisy* direction (a renamed or newly added template
+   reports false failures). Content-derived plus test-pinned is the stronger guard, and
+   `RealTreeTests` asserts the exact skipped set so a skip cannot widen unnoticed.
+2. **Prose endpoints** (`the frame the overlay was opened from`) are not exempted from the
+   audit so much as excluded from what is auditable; they name a state, not a file. They
+   are counted and printed, and the count is pinned in the tests, so the gap is measured
+   rather than assumed.
 
 Scope is repo-internal tooling for maintainers, like `check_invariants.py` and
 `check_dsl_default_params.py` — a user's project has its own plan to declare its own
@@ -149,12 +168,19 @@ def is_declared(reference: str, declared: list[str]) -> bool:
     return any(stem_of(entry) == wanted for entry in declared)
 
 
-def declared_outputs(lines: list[str]) -> list[str]:
+def declared_line(lines: list[str]) -> str | None:
+    """The raw text after `Planned output files:`, or None when the line is absent."""
     for line in lines:
         match = DECLARED_RE.match(line)
         if match:
-            return [token.strip() for token in BACKTICK_RE.findall(match.group(1))]
-    return []
+            return match.group(1)
+    return None
+
+
+def declared_outputs(raw: str | None) -> list[str]:
+    if raw is None:
+        return []
+    return [token.strip() for token in BACKTICK_RE.findall(raw)]
 
 
 def references_of(lines: list[str]) -> list[tuple[int, str]]:
@@ -211,9 +237,7 @@ def prose_count(lines: list[str]) -> int:
     return count
 
 
-def audit(plan: Path, report: Report) -> None:
-    lines = plan.read_text(encoding="utf-8").splitlines()
-    declared = declared_outputs(lines)
+def audit(plan: Path, lines: list[str], declared: list[str], report: Report) -> None:
     report.plans.append(plan)
     report.declared += len(declared)
 
@@ -240,15 +264,18 @@ def run(root: Path) -> Report:
     report = Report()
     for plan in sorted(root.glob(PLAN_GLOB)):
         try:
-            text = plan.read_text(encoding="utf-8")
+            lines = plan.read_text(encoding="utf-8").splitlines()
         except (OSError, UnicodeError):
             continue
-        # A template's declared list is a placeholder: there is nothing to resolve against,
-        # and reporting its references as undeclared would be a false failure.
-        if PLACEHOLDER_RE.search(text):
+        raw = declared_line(lines)
+        # A template's *declaration line* is a placeholder: there is nothing to resolve
+        # against. The test is on that line alone — searching the whole document would
+        # skip any real plan that kept a leftover `{{…}}` elsewhere, which is an exemption
+        # silently widening rather than a template being recognized.
+        if raw is not None and PLACEHOLDER_RE.search(raw):
             report.skipped.append(plan)
             continue
-        audit(plan, report)
+        audit(plan, lines, declared_outputs(raw), report)
     return report
 
 
@@ -274,13 +301,17 @@ def main() -> int:
             where = skipped.relative_to(root)
         except ValueError:
             where = skipped
-        print(f"  skipped (placeholder declared list, so a template): {where}")
+        print(f"  skipped (declaration line is a placeholder, so a template): {where}")
     print(f"Declared output files: {report.declared}")
     print(f"References checked: {report.references}")
     if report.prose:
         print(
             f"Prose references, not machine-resolvable and therefore not counted: {report.prose}"
         )
+    # Silence about an unchecked dimension reads as coverage. State it here, where the
+    # PASS/FAIL verdict is printed, not only in the docstring nobody re-reads.
+    print("Not checked: prototype link targets — no filename mapping exists between the")
+    print("  example prototypes and the declared `ui/*.html` names (see this module's docstring).")
 
     if report.violations:
         print(f"\nViolations ({len(report.violations)}):")
