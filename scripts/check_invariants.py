@@ -12,12 +12,18 @@ meaningless there. The user-facing skill invocations (e.g. the DSL topology audi
 `axb-gherkin-and-dsl/SKILL.md` Phase 6 tells an agent to run inside a user's project)
 are authoritative in their own skill and are deliberately not restated here.
 
-Invariants 1-4 **fail** on violation. Invariants 5-6 **report candidates only** and never
+Invariants 1-4 and 7-8 **fail** on violation. Invariants 5-6 **report candidates only** and never
 fail: both need human triage (a citation may record provenance or be load-bearing; a
 delivery claim may name a real check or none), and a check that fails on candidates it
 cannot triage gets deleted. The triage criterion is printed with each candidate instead.
 
 See issue #12 for why each invariant exists and which PR's defect it would have caught.
+
+**Exemptions are not written in this file.** Any tolerance goes into `scripts/invariant_allowlist.json`,
+which the test suite re-checks for staleness entry by entry, because three checker PRs (#21, #23,
+#27) have put zero defects in their invariants and every one of their defects in the exemption
+machinery — a character window, an operand, a lookbehind, an in-code set, a self-skip. A tolerance
+expressed here is one nothing can tell has gone stale (#27 finding 1).
 """
 
 from __future__ import annotations
@@ -128,7 +134,19 @@ def load_allowlist(root: Path) -> dict:
 
 
 def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, root: Path) -> bool:
-    """An allowlist entry is executable, not prose: {invariant: [{path, contains}]}."""
+    """An allowlist entry is executable, not prose: `{path, contains?, line_matches?}`.
+
+    An entry with neither predicate allowlists the whole file. An entry with both must
+    satisfy both: adding a second, more specific predicate narrows an exemption and can
+    never widen one.
+
+    `line_matches` exists because a byte-radius window cannot express "this section
+    reference is a licence citation" (#27 finding 4). The licence name sits an
+    unpredictable distance before the `§`, and only the spellings that happened to fit the
+    window were covered. A predicate tested against the whole line states what was meant,
+    and — unlike a radius — the suite's staleness test can tell whether it still matches
+    anything at all.
+    """
     try:
         key = str(path.relative_to(root))
     except ValueError:
@@ -137,8 +155,12 @@ def allowlisted(allowlist: dict, invariant: str, path: Path, line_text: str, roo
         if entry.get("path") != key:
             continue
         needle = entry.get("contains")
-        if needle is None or needle in line_text:
-            return True
+        if needle is not None and needle not in line_text:
+            continue
+        pattern = entry.get("line_matches")
+        if pattern is not None and not re.search(pattern, line_text):
+            continue
+        return True
     return False
 
 
@@ -419,6 +441,137 @@ def check_token_registry(result: Result, allowlist: dict, root: Path, sources: l
 
 
 # --------------------------------------------------------------------------------------
+# Invariants 7-8: references that must resolve (fail)
+# --------------------------------------------------------------------------------------
+
+# The generous shape on purpose (#27 finding 7): any case, `-` and `_`. `/Plan` and
+# `/skill_engineering` are drift, not prose, and invariant 4 taught this repository that
+# drift arrives in neighbouring spellings rather than canonical ones.
+#
+# What keeps it from becoming a false-positive machine is the closing backtick: the span
+# must be **exactly** `/name`, so a further `/` or a file extension disqualifies it. That
+# single anchor is why `/usr/local`, `/dev/null`, `/plans/` and bare `/` stay unreported
+# without any second guard — and `SkillReferenceTests.PATH_SHAPED_TOKENS` pins that, so a
+# later loosening of this pattern fails a test instead of failing the gate in CI.
+SKILL_REF_RE = re.compile(r"`/([A-Za-z][A-Za-z0-9_-]*)`")
+
+
+def check_skill_references(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:
+    """Invariant 7: every backticked `/command` names a skill that exists.
+
+    Deliberately **not** restricted to `axb-` names. The defects this exists to catch were
+    `/plan`, `/plan-with-class-diagram` and `/skill-engineering` (#2) — none of which carry
+    the prefix — so an `axb-`-only pattern would pass every one of them. That is how the
+    first version of this check missed its own motivating cases.
+
+    A non-command slash token (`` `/ws` ``, a FastAPI route) is exempted through
+    `invariant_allowlist.json`, never through a set declared in this file. An in-code
+    exemption is one the staleness test cannot see, and a comment claiming otherwise is
+    worse than no comment (#27 finding 1).
+    """
+    skills_dir = root / "skills"
+    if not skills_dir.is_dir():
+        result.fail("skill-references", "no `skills/` directory to resolve references against")
+        return
+    known = {p.name for p in skills_dir.iterdir() if p.is_dir()}
+
+    for path, lines in sources:
+        for number, line in enumerate(lines, start=1):
+            for match in SKILL_REF_RE.finditer(line):
+                name = match.group(1)
+                if name in known:
+                    continue
+                if allowlisted(allowlist, "skill-references", path, line, root):
+                    continue
+                result.fail(
+                    "skill-references",
+                    f"`/{name}` is not a skill under `skills/` — a command reference must name a "
+                    "real skill; if this is not a command, add a `skill-references` allowlist "
+                    "entry for the line, so the exemption is staleness-checked",
+                    path,
+                    number,
+                )
+
+
+SECTION_REF_RE = re.compile(r"§\s?(\d+(?:\.\d+)*)")
+# A numbered heading at any level the standard uses (`## 4.`, `### 5.1`, `#### 4.3.1`).
+HEADING_SECTION_RE = re.compile(r"^#{2,4}\s+(\d+(?:\.\d+)*)[\.\s]")
+
+
+def standard_sections(document: str) -> set[str]:
+    """Every section number STANDARDS.md declares, ancestors included.
+
+    Fenced lines are masked out because this repository writes markdown-about-markdown: an
+    example that contains a `## 9. Example` line is illustrating a heading, not declaring
+    one. Without the mask that phantom 9 enters `known` and every dangling `§9` in the tree
+    passes (#27 finding 5) — the same failure, in the same document, that `section_text`
+    already guards against with the same helper (#21 finding 10).
+
+    An ancestor is registered so `§4` resolves when only `§4.3` is declared: the standard
+    numbers its sections as a tree, and a reference to a parent is a reference to the
+    section the child lives in.
+    """
+    lines = document.splitlines()
+    fenced = fenced_line_mask(lines)
+    known: set[str] = set()
+    for line, inside_fence in zip(lines, fenced):
+        if inside_fence:
+            continue
+        match = HEADING_SECTION_RE.match(line)
+        if match is None:
+            continue
+        parts = match.group(1).split(".")
+        for depth in range(1, len(parts) + 1):
+            known.add(".".join(parts[:depth]))
+    return known
+
+
+def check_section_references(
+    result: Result, allowlist: dict, root: Path, sources: list[Source]
+) -> None:
+    """Invariant 8: every `§N` naming a STANDARDS.md section resolves to a real heading.
+
+    Would have caught #6 finding 2. A `§` on a line that cites a licence (`Apache-2.0
+    §4(d)`) refers to that licence, not to the standard; the exemption is a
+    `line_matches` allowlist entry, not a window around the `§`. The window it replaced
+    was 16 characters tied to the literal `Apache-N.N ` spelling, so `Apache License 2.0
+    §11(x)` and `Apache-2.0, §11(x)` — the same citation, spelled differently — failed the
+    gate falsely (#27 finding 4).
+
+    The reference pattern takes the whole dotted run and tolerates a space after the `§`
+    (#27 finding 5): truncating `§4.3.1` to `§4.3` passed any three-level dangling
+    reference whose parent existed, and `§ 5.2` was not checked at all.
+
+    `STANDARDS.md` is **not** skipped (#27 finding 6). It cites its own section numbers in
+    prose, and those self-citations resolve against the same `known` set, so a skip was
+    never needed for them. What the skip did was exempt the one file whose renumbering can
+    orphan references in a single edit — the failure that actually happened in #15.
+    """
+    defining = root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+    if not defining.is_file():
+        return
+    known = standard_sections(defining.read_text(encoding="utf-8"))
+
+    for path, lines in sources:
+        for number, line in enumerate(lines, start=1):
+            for match in SECTION_REF_RE.finditer(line):
+                section = match.group(1)
+                if section in known:
+                    continue
+                if allowlisted(allowlist, "section-references", path, line, root):
+                    continue
+                result.fail(
+                    "section-references",
+                    f"`§{section}` does not name a section of `skills/axb-gherkin-and-dsl/STANDARDS.md`; "
+                    "if it refers to something else (a licence, another document), add a "
+                    "`section-references` allowlist entry for the line, so the exemption is "
+                    "staleness-checked",
+                    path,
+                    number,
+                )
+
+
+# --------------------------------------------------------------------------------------
 # Invariants 5-6: candidate reports (never fail)
 # --------------------------------------------------------------------------------------
 
@@ -492,6 +645,10 @@ def run(root: Path, selected: set[str] | None = None) -> Result:
         ),
         "tokens": lambda: check_token_registry(result, allowlist, root, sources),
         "refs": lambda: (check_normative_refs(result, sources), check_asserted_enforcement(result, sources)),
+        "names": lambda: (
+            check_skill_references(result, allowlist, root, sources),
+            check_section_references(result, allowlist, root, sources),
+        ),
     }
     for name, check in checks.items():
         if selected and name not in selected:
@@ -504,7 +661,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(
         "--only",
-        choices=("paths", "tokens", "refs"),
+        choices=("paths", "tokens", "refs", "names"),
         action="append",
         help="run only this group (repeatable); default runs all",
     )
