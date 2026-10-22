@@ -208,18 +208,20 @@ entities:
     definition: >
       The technical-decision artifact produced by axb-technical-research: candidate
       options, adoption and rejection reasons, risks, and the resulting technology
-      choices. Each `Research` updates the current `Techstack` truth and is reviewed
-      before that update is accepted.
+      choices. Each `Research` is produced together with the `Techstack` update it
+      justifies, in one pass; there is no review gate between the two writes.
     relationships:
       - entity: Techstack
         cardinality: "n:1"
         ownership: referenced
         note: Each `Research` updates the current `Techstack` truth.
     invariants:
-      - id: research-precedes-techstack
+      - id: research-justifies-techstack
         statement: >
-          A `Techstack` update is applied only after the `Research` producing it has
-          been reviewed.
+          Every `Techstack` change is justified by a `Decision` in the `Research`
+          artifact produced in the same round; a `Techstack` value never appears
+          without that traceable decision. Review of the pair happens after both are
+          written, at the plan's ready judgment — not as a gate between them.
 
   AnalysisPlan:
     definition: >
@@ -548,7 +550,7 @@ scenarios:
       - "A later `Wave` delegates the API interface; axb-api-plan produces the `Contract` truth."
       - "A later `Wave` delegates the data interface; axb-data-plan produces the `DataModel` truth."
     invariants_touched:
-      [research-precedes-techstack, techstack-complete, analysis-plan-never-writes-truth,
+      [research-justifies-techstack, techstack-complete, analysis-plan-never-writes-truth,
        wave-covers-interfaces, wave-dependency-ordered, contract-authoritative,
        data-model-covers-all-state]
 
@@ -587,14 +589,15 @@ scenarios:
 
   - name: Implement to green
     description: >
-      axb-implement executes the task list in constraint-ordered batches, writing
-      step definitions straight from the DSL implementation semantics until every
-      test is green.
+      axb-implement executes the task list in constraint-ordered batches. It writes
+      the test layer's step definitions itself for alignment tasks, but delegates the
+      per-feature green and refactor legs to axb-bdd, until every test is green.
     actors: [RD, Skill]
     steps:
       - "axb-tasks has produced the `Task`s: alignment work first, then per-feature green and refactor."
       - "Implementation completes the current batch and marks those `Task`s done before starting the next."
       - "For each step definition, the merged `DSL` lookup resolves exactly one `DSLRow` and its implementation semantics are followed."
+      - "`[BDD-GREEN]` and `[BDD-REFACTOR]` `Task`s are delegated to axb-bdd with that task's `TestScope`; axb-implement does not write those step definitions or product code itself."
       - "Focused tests run until the feature's scenarios are green; refactor happens only under green protection."
     invariants_touched: [task-strict-ordering, dsl-exact-one-match, skill-scoped-writes]
 

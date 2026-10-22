@@ -24,7 +24,7 @@
   Every normative item (FR / NFR / SC / EC) must be annotated with a Verification Intent:
   - observable → <corresponding acceptance scenario or Rule>: externally observable and verifiable via acceptance Gherkin.
   - unobservable → <expected witness level>: not observable by external Gherkin; requires unit pins or fault-injection seams at the implementation layer (e.g. unit pin, fault-injection seam).
-  - accepted-unwitnessed: approved via the project decision surface as witness-exempt (must comply with the anti-washing clause and must not be abused).
+  - accepted-unwitnessed: approved via the project decision surface as witness-exempt (must comply with the witness-exempt approval and anti-laundering clause, and must not be abused).
   Leaving any normative item without a Verification Intent annotation is strictly forbidden.
 
   Only requirements that genuinely cannot reasonably belong to a single user story,

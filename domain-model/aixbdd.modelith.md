@@ -247,7 +247,7 @@ One mid-fidelity prototype surface produced from a `UIPlan`, in the medium its i
 
 ### `Research`
 
-The technical-decision artifact produced by axb-technical-research: candidate options, adoption and rejection reasons, risks, and the resulting technology choices. Each `Research` updates the current `Techstack` truth and is reviewed before that update is accepted.
+The technical-decision artifact produced by axb-technical-research: candidate options, adoption and rejection reasons, risks, and the resulting technology choices. Each `Research` is produced together with the `Techstack` update it justifies, in one pass; there is no review gate between the two writes.
 
 **Relationships**
 
@@ -255,7 +255,7 @@ The technical-decision artifact produced by axb-technical-research: candidate op
 
 **Invariants**
 
-- **research-precedes-techstack** — A `Techstack` update is applied only after the `Research` producing it has been reviewed.
+- **research-justifies-techstack** — Every `Techstack` change is justified by a `Decision` in the `Research` artifact produced in the same round; a `Techstack` value never appears without that traceable decision. Review of the pair happens after both are written, at the plan's ready judgment — not as a gate between them.
 
 ### `Skill`
 
@@ -458,7 +458,7 @@ In parallel with the PM's later steps, the `RD` researches technology, then anal
 
 **Invariants touched**
 
-- **research-precedes-techstack** — A `Techstack` update is applied only after the `Research` producing it has been reviewed.
+- **research-justifies-techstack** — Every `Techstack` change is justified by a `Decision` in the `Research` artifact produced in the same round; a `Techstack` value never appears without that traceable decision. Review of the pair happens after both are written, at the plan's ready judgment — not as a gate between them.
 - **techstack-complete** — The `Techstack` represents the complete current technology stack, not just the latest round's delta.
 - **analysis-plan-never-writes-truth** — An `AnalysisPlan` orchestrates analysis only; it never creates or modifies a `TruthArtifact`.
 - **wave-covers-interfaces** — Every interface identified by an `AnalysisPlan` is either delegated to a planner in at least one `Wave` or carried forward to its contract owner at delivery.
@@ -517,7 +517,7 @@ A later round modifies existing behavior slightly and adds one feature: a fresh 
 
 ### Implement to green
 
-axb-implement executes the task list in constraint-ordered batches, writing step definitions straight from the DSL implementation semantics until every test is green.
+axb-implement executes the task list in constraint-ordered batches. It writes the test layer's step definitions itself for alignment tasks, but delegates the per-feature green and refactor legs to axb-bdd, until every test is green.
 
 **Actors:** RD, Skill
 
@@ -526,7 +526,8 @@ axb-implement executes the task list in constraint-ordered batches, writing step
 1. axb-tasks has produced the `Task`s: alignment work first, then per-feature green and refactor.
 2. Implementation completes the current batch and marks those `Task`s done before starting the next.
 3. For each step definition, the merged `DSL` lookup resolves exactly one `DSLRow` and its implementation semantics are followed.
-4. Focused tests run until the feature's scenarios are green; refactor happens only under green protection.
+4. `[BDD-GREEN]` and `[BDD-REFACTOR]` `Task`s are delegated to axb-bdd with that task's `TestScope`; axb-implement does not write those step definitions or product code itself.
+5. Focused tests run until the feature's scenarios are green; refactor happens only under green protection.
 
 **Invariants touched**
 

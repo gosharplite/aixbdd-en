@@ -38,7 +38,7 @@ disable-model-invocation: true
 3. THINK For `DELETE` truth interface feature files, Rules, Examples, or DSL sentences, create `[CODE-REMOVE] -> [REGRESSION]` and declare `Test Scope`.
 4. THINK Fill in `Shared Must Read`, `Boundary`, and `Test Scope` for each Feature phase; omit the root DSL reference when no interface root shared DSL rows are used. Truth references must use `specs/truth/**` paths.
 5. THINK If acceptance scenarios cannot be uniquely carried by existing truth features, the same-module DSL, and relevant shared DSL rows, stop the affected scope and hand back to `/axb-dsl-refine`.
-6. THINK Inventory `spec.md`'s normative items and truth-surface text; schedule atomic effect claims not externally observable via Gherkin as Phase 4W `[WITNESS]` pins; mark `Dependencies: T###`, `Test Scope`, and `Falsifier`. If a witness cannot be established, per the anti-washing clause require the human decision maker's approval on the project decision surface, or thoroughly demote and remove from truth surfaces.
+6. THINK Inventory `spec.md`'s normative items and truth-surface text; schedule atomic effect claims not externally observable via Gherkin as Phase 4W `[WITNESS]` pins; mark `Dependencies: T###`, `Test Scope`, and `Falsifier`. If a witness cannot be established, per the witness-exempt approval and anti-laundering clause require the human decision maker's approval on the project decision surface, or thoroughly demote and remove from truth surfaces.
 
 ## Phase 5 -- Output and verify tasks.md
 

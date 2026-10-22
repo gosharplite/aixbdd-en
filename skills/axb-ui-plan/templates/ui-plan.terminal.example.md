@@ -44,6 +44,15 @@
 - Success transitions: `After completion, return to the edit frame with an output summary.`
 - Error feedback: `On execution failure, show an error summary and suggested next step, then return to the edit frame.`
 
+### 4. `Keybinding Help Overlay`
+
+- Corresponding frame file: `ui/screens/30-help.txt`
+- Main purpose: `List every binding available in the current frame so users can discover operations without leaving the session.`
+- Entry condition: `The user presses ? in the edit or running frame.`
+- Primary operation keys: `Esc dismiss the overlay, ↑/↓ scroll when the list exceeds the viewport.`
+- Success transitions: `Dismissing returns to exactly the frame the overlay was opened from, with input and selection state unchanged.`
+- Error feedback: `If the overlay is opened while a command runs, keep the running status visible in the status bar rather than hiding it behind the overlay.`
+
 ## Keybinding Map
 
 | Key | Action | Target Frame | Expected Result |

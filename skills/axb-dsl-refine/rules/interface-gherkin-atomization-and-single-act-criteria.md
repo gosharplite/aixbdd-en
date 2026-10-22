@@ -3,7 +3,7 @@
 - Level: `MUST`
 - `features/acceptance/**` may express complete business acceptance with multi-step Journeys; `features/{interface-name}/**` must not copy that flow granularity as-is.
 - The business outcomes, failure invariants, and interface-observable results in the Journey should be extracted one by one and dispatched to the interfaces genuinely responsible for them, each forming independently executable Rules.
-- The same set of Given / When repeating across different Rules is an acceptable test isolation cost; do not re-chains multiple rules back into a flow for deduplication.
+- The same set of Given / When repeating across different Rules is an acceptable test isolation cost; do not re-chain multiple rules back into a flow for deduplication.
 
 ## Good Example
 

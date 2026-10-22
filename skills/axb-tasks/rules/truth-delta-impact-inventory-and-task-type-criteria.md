@@ -35,7 +35,7 @@ The first phase in `tasks.md` is Setup:
 - Level: `MUST`
 - `ADD` sentences, or sentences used by this round's Feature with no stepdef yet: Phase 3 uses `[BDD-RED]`; the corresponding Feature phase keeps only `[BDD-GREEN] -> [BDD-REFACTOR]`.
 - `MODIFY` sentences: Phase 3 uses `[BDD-ALIGN]`; the corresponding Feature phase keeps only `[BDD-GREEN] -> [BDD-REFACTOR]`.
-- `DELETE` sentences: Phase 3 uses `[BDD-REMOVE]`; the corresponding Feature phase keeps only `[CODE-REMOVE] -> `[REGRESSION]`.
+- `DELETE` sentences: Phase 3 uses `[BDD-REMOVE]`; the corresponding Feature phase keeps only `[CODE-REMOVE]` -> `[REGRESSION]`.
 - A DSL row that only moves its unique authoritative location with unchanged semantics is still `MODIFY`; Phase 3 only aligns precise references and existing test entries, and must not split it into `[BDD-REMOVE]` and `[BDD-RED]`.
 - Do not write `[BDD-RED]`, `[BDD-ALIGN]`, or `[BDD-REMOVE]` into Feature phases.
 - Do not force DELETE into an addition-style RED, nor treat MODIFY as a completely new feature file.
