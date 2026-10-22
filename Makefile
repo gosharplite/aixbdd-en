@@ -29,7 +29,7 @@ SCRIPTS := scripts
 CHECKER := $(SCRIPTS)/check_invariants.py
 EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 
-.PHONY: help check check-paths check-tokens check-refs check-audit check-python test
+.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test
 
 help: ## List targets
 	@echo "Targets for developing aixbdd-en (not for skill users):"
@@ -51,10 +51,13 @@ check-tokens: check-python ## Invariant 4: fixed-token registry vs definitions a
 check-refs: check-python ## Invariants 5-6: candidate report for normative refs and asserted gates
 	@$(RUN) $(CHECKER) --only refs
 
+check-params: check-python ## STANDARDS §4.3: every Default Params cell conforms
+	@$(RUN) $(SCRIPTS)/check_dsl_default_params.py
+
 check-audit: check-python ## DSL topology audit of this repo's own example tree
 	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(EXAMPLES)
 
-check: check-paths check-tokens check-refs check-audit ## Run everything (default gate)
+check: check-paths check-tokens check-refs check-params check-audit ## Run everything (default gate)
 
 test: check-python ## Run the checkers' own test suites
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v

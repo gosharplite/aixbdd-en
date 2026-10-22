@@ -6,7 +6,7 @@ This module's specific sentences. For cross-module shared sentences see [`../dsl
 
 | DSL Sentence | Gherkin Params | Data Table Params | Default Params | StepDef Implementation Semantics |
 | --- | --- | --- | --- | --- |
-| `"{player}" has already applied discount code "{discount-code}"` | `player`: string; the player name.<br>`discount-code`: string; the discount code text. | Not supported | `target-cart`: defaults to that player's current cart. | `How`: call the discount-code application entry (the shared `../dsl.md` When sentence's entry) once in setup — do not replay the application as a visible act. `State landing`: the discount code is applied to the backend order, and the order summary reflects it. `Write-back`: the order with the discount applied, its order summary, and the applied discount code's status. `No-check`: the first application's response and the discount code status — the applied state is verified by the scenario's final Then. |
+| `"{player}" has already applied discount code "{discount-code}"` | `player`: string; the player name.<br>`discount-code`: string; the discount code text. | Not supported | `target-cart`: the cart `{player}` owns, created by the preceding cart Given. | `How`: call the discount-code application entry (the shared `../dsl.md` When sentence's entry) once in setup — do not replay the application as a visible act. `State landing`: the discount code is applied to the backend order, and the order summary reflects it. `Write-back`: the order with the discount applied, its order summary, and the applied discount code's status. `No-check`: the first application's response and the discount code status — the applied state is verified by the scenario's final Then. |
 
 ## Then Sentences
 
