@@ -71,6 +71,12 @@ Every DSL row in the interface root and module `dsl.md` must have at least the f
 - `Default Params`
 - implementation-semantics column
 
+**The implementation-semantics column's header names the runner whose semantics it records, and must
+end with `Implementation Semantics`** — `StepDef Implementation Semantics` for backend,
+`Playwright BDD Implementation Semantics` for frontend. An interface kind added later names its own
+runner and keeps the suffix. Downstream documents therefore refer to "the implementation-semantics
+column" rather than to one kind's header, and the suffix is what makes that reference unambiguous.
+
 ### 4.1 Gherkin Parameter Column
 
 - Bullet-list each parameter

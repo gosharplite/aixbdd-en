@@ -6,7 +6,7 @@ This module's specific sentences. For cross-module shared sentences see [`../dsl
 
 | DSL Sentence | Gherkin Params | Data Table Params | Default Params | StepDef Implementation Semantics |
 | --- | --- | --- | --- | --- |
-| `"{player}" views the order summary again` | `player`: string; the player name. | Not supported | `target-order`: defaults to that player's current checkout order. | `How`: re-read the order summary. `State landing`: this is a re-read confirmation; it does not change state. `Write-back`: the full latest order summary. |
+| `"{player}" views the order summary again` | `player`: string; the player name. | Not supported | `target-order`: defaults to that player's current checkout order. | `How`: re-read the order summary. `State landing`: this is a re-read confirmation; it does not change state. `Write-back`: the full latest order summary. `No-check`: the summary values themselves — re-reading must not alter them; the following Then compares them. |
 
 ## Then Sentences
 
