@@ -22,7 +22,7 @@ The action a `DeltaEntry` reports for a truth specification.
 | `add` | The truth specification was created this round. |
 | `modify` | The truth specification was changed this round. |
 | `delete` | The truth specification was removed this round. |
-| `noop` | The truth area was checked against the round's changes and needed no change — recorded to prove the check happened. |
+| `noop` | The truth area needs no change this round. The entry's reason says which of two situations applies: the owner inspected its scope and found it sufficient, or no planner or owner applied to the round's plan at all so nothing was inspected — the analysis decision that skipped the owner is recorded instead. |
 
 ### `InterfaceKind`
 
@@ -134,7 +134,7 @@ The canonical data-model truth (`specs/truth/data/**`, DBML): tables, enums, rel
 
 ### `DeltaEntry`
 
-One row in a `TruthDelta`: an action (add, modify, delete or noop) on a truth specification, with a change summary and a reason. Every truth owner records at least one entry per round — a noop entry proves a truth area was checked against the round's changes even when nothing needed to change.
+One row in a `TruthDelta`: an action (add, modify, delete or noop) on a truth specification, with a change summary and a reason. Every truth owner section holds at least one entry per round. A noop entry records that the area needed no change, and its reason distinguishes "inspected, nothing needed" from "not applicable, by analysis decision" — the two share an action because they have the same downstream effect, and differ in the audit trail.
 
 **Relationships**
 
@@ -349,7 +349,7 @@ The per-`PlanPackage` ledger (`truth-delta.md`) recording every truth change of 
 
 **Invariants**
 
-- **delta-covers-all-owners** — Every truth owner records at least one `DeltaEntry` per round; a noop entry satisfies this by proving the area was checked.
+- **delta-covers-all-owners** — Every truth owner section holds at least one `DeltaEntry` per round. A noop entry satisfies this whether the owner inspected its scope and found it sufficient or was skipped by an analysis decision — but the entry's reason must say which, since "not applicable" proves no check happened and must not be recorded as one.
 
 ### `UIPlan`
 
@@ -495,7 +495,7 @@ axb-dsl-refine turns the PM's acceptance journeys into interface-level features 
 - **module-boundary-reuse** — Module boundaries are reused from existing truth; a round does not invent new `Module`s while a suitable one exists.
 - **dsl-single-authority** — A sentence pattern has exactly one authoritative `DSLRow` — either at the `Interface` root or in a `Module`, never duplicated across levels.
 - **dsl-exact-one-match** — Merging the interface-root and module `DSL`s, every step of a feature must match exactly one `DSLRow` — zero is a gap, more than one is an ambiguity.
-- **delta-covers-all-owners** — Every truth owner records at least one `DeltaEntry` per round; a noop entry satisfies this by proving the area was checked.
+- **delta-covers-all-owners** — Every truth owner section holds at least one `DeltaEntry` per round. A noop entry satisfies this whether the owner inspected its scope and found it sufficient or was skipped by an analysis decision — but the entry's reason must say which, since "not applicable" proves no check happened and must not be recorded as one.
 - **delta-entry-cites-truth** — Each `DeltaEntry` names the truth specification it reports on and carries a summary and a reason.
 
 ### Second round with a minor spec change
@@ -519,7 +519,7 @@ A later round modifies existing behavior slightly and adds one feature: a fresh 
 - **spec-pm-authored** — Only the `PM` edits a `Spec`; the `RD` side escalates gaps through clarification instead of editing it.
 - **dsl-single-authority** — A sentence pattern has exactly one authoritative `DSLRow` — either at the `Interface` root or in a `Module`, never duplicated across levels.
 - **truth-current** — A `TruthArtifact` always reflects the current system, never the view of a single round.
-- **delta-covers-all-owners** — Every truth owner records at least one `DeltaEntry` per round; a noop entry satisfies this by proving the area was checked.
+- **delta-covers-all-owners** — Every truth owner section holds at least one `DeltaEntry` per round. A noop entry satisfies this whether the owner inspected its scope and found it sufficient or was skipped by an analysis decision — but the entry's reason must say which, since "not applicable" proves no check happened and must not be recorded as one.
 
 ### Implement to green
 
@@ -570,9 +570,10 @@ A pure-CLI round inventorying a line-oriented terminal end (no TUI). No API, dat
 
 1. axb-system-analysis inventories a CLI end and records it as an `Interface` of the CLI kind.
 2. No API, data or UI planner applies; the plan records the CLI end as carried forward to its contract owner at delivery.
-3. A `cli` interface that ships a TUI instead gets a terminal-mode `UIPlan` (no HTML) from the PM, which system-analysis reviews but does not redo or re-plan.
-4. axb-dsl-refine writes the CLI feature files under `specs/truth/features/cli/**`, reusing the module boundaries.
-5. axb-truth-delta records the CLI feature and DSL change in the round's `TruthDelta`.
+3. Because no API or data surface exists, axb-system-analysis skips both axb-api-plan and axb-data-plan, recording each skip as a noop `DeltaEntry` in its own owner section with the analysis decision as the reason.
+4. A `cli` interface that ships a TUI instead gets a terminal-mode `UIPlan` (no HTML) from the PM, which system-analysis reviews but does not redo or re-plan.
+5. axb-dsl-refine writes the CLI feature files under `specs/truth/features/cli/**`, reusing the module boundaries.
+6. axb-truth-delta records the CLI feature and DSL change in the round's `TruthDelta`.
 
 **Invariants touched**
 
@@ -582,5 +583,5 @@ A pure-CLI round inventorying a line-oriented terminal end (no TUI). No API, dat
 - **truth-single-owner** — Each `TruthArtifact` has exactly one owning `Skill`, which is the only writer allowed to change it.
 - **interface-features-nested** — Feature files live only inside a `Module`; an `Interface` root never contains feature files directly.
 - **module-boundary-reuse** — Module boundaries are reused from existing truth; a round does not invent new `Module`s while a suitable one exists.
-- **delta-covers-all-owners** — Every truth owner records at least one `DeltaEntry` per round; a noop entry satisfies this by proving the area was checked.
+- **delta-covers-all-owners** — Every truth owner section holds at least one `DeltaEntry` per round. A noop entry satisfies this whether the owner inspected its scope and found it sufficient or was skipped by an analysis decision — but the entry's reason must say which, since "not applicable" proves no check happened and must not be recorded as one.
 

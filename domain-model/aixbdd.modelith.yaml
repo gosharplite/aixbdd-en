@@ -67,8 +67,11 @@ enums:
         definition: The truth specification was removed this round.
       - name: noop
         definition: >
-          The truth area was checked against the round's changes and needed no
-          change — recorded to prove the check happened.
+          The truth area needs no change this round. The entry's reason says which of
+          two situations applies: the owner inspected its scope and found it
+          sufficient, or no planner or owner applied to the round's plan at all so
+          nothing was inspected — the analysis decision that skipped the owner is
+          recorded instead.
 
 entities:
   PlanPackage:
@@ -457,15 +460,20 @@ entities:
     invariants:
       - id: delta-covers-all-owners
         statement: >
-          Every truth owner records at least one `DeltaEntry` per round; a noop entry
-          satisfies this by proving the area was checked.
+          Every truth owner section holds at least one `DeltaEntry` per round. A noop
+          entry satisfies this whether the owner inspected its scope and found it
+          sufficient or was skipped by an analysis decision — but the entry's reason
+          must say which, since "not applicable" proves no check happened and must not
+          be recorded as one.
 
   DeltaEntry:
     definition: >
       One row in a `TruthDelta`: an action (add, modify, delete or noop) on a truth
-      specification, with a change summary and a reason. Every truth owner records at
-      least one entry per round — a noop entry proves a truth area was checked
-      against the round's changes even when nothing needed to change.
+      specification, with a change summary and a reason. Every truth owner section
+      holds at least one entry per round. A noop entry records that the area needed no
+      change, and its reason distinguishes "inspected, nothing needed" from "not
+      applicable, by analysis decision" — the two share an action because they have
+      the same downstream effect, and differ in the audit trail.
     attributes:
       - name: action
         type: DeltaAction
@@ -632,6 +640,7 @@ scenarios:
     steps:
       - "axb-system-analysis inventories a CLI end and records it as an `Interface` of the CLI kind."
       - "No API, data or UI planner applies; the plan records the CLI end as carried forward to its contract owner at delivery."
+      - "Because no API or data surface exists, axb-system-analysis skips both axb-api-plan and axb-data-plan, recording each skip as a noop `DeltaEntry` in its own owner section with the analysis decision as the reason."
       - "A `cli` interface that ships a TUI instead gets a terminal-mode `UIPlan` (no HTML) from the PM, which system-analysis reviews but does not redo or re-plan."
       - "axb-dsl-refine writes the CLI feature files under `specs/truth/features/cli/**`, reusing the module boundaries."
       - "axb-truth-delta records the CLI feature and DSL change in the round's `TruthDelta`."

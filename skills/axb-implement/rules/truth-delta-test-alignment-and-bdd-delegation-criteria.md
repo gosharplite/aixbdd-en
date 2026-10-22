@@ -1,7 +1,7 @@
 # Rule 1 - The truth delta action must be determined before execution
 
 - Level: `MUST`
-- Before `/axb-implement` starts a task, it must determine from `truth-delta.md` and `tasks.md` whether the current task corresponds to `ADD`, `MODIFY`, `DELETE`, or `NOOP`.
+- Before `/axb-implement` starts a task, it must determine from `truth-delta.md` and `tasks.md` whether the current task corresponds to `ADD`, `MODIFY`, or `DELETE`. A development task never binds a `NOOP` — a `NOOP` row contributes no task (see `skills/axb-tasks/templates/tasks.md`'s Task Binding Contract) — so a task that appears to bind one is a `tasks.md` error: report it, do not execute it as though it were work.
 - If the task is not explicitly linked to a truth-delta row but belongs to a phase affected by truth changes, the action must be inferred from the phase's `Shared Must Read` and `Boundary`.
 - A `[BDD-RED]` used by this round's Feature that has no stepdef yet and thus is not in truth-delta has its action treated as `ADD`.
 - If the action cannot be determined and would affect tests or product behavior, stop and report that `tasks.md` needs explicit references added.

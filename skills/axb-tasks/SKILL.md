@@ -14,7 +14,7 @@ disable-model-invocation: true
 
 1. READ Read the user requirements, the target plan package's `spec.md`, `plan.md`, `research.md`, `ui/**`, `truth-delta.md`, and the affected modules' truth features, module DSL, the interface root shared DSL rows actually referenced by truth-delta, relevant contracts/data, and `specs/truth/techstack.md`.
 2. READ Read `.agents/constitution/CONSTITUTION.md` and `.agents/constitution/shared.md`, treating their rules as constraints above the local artifact standards.
-3. READ Read `rules/truth-delta-impact-inventory-and-task-type-criteria.md` to confirm how ADD / MODIFY / DELETE / NOOP split into Phase 3's test layer and Feature's product layer, and the boundaries of Setup, Foundational, and Test Alignment.
+3. READ Read `rules/truth-delta-impact-inventory-and-task-type-criteria.md` to confirm how ADD / MODIFY / DELETE split into Phase 3's test layer and Feature's product layer (a NOOP row contributes no task), and the boundaries of Setup, Foundational, and Test Alignment.
 4. THINK Inventory all DSL sentences used by this round's Feature: including sentences changed in truth-delta, and sentences used by this round's Feature that have no stepdef yet. If there are `MODIFY` or `DELETE`, also inventory existing stepdefs, helpers, fixtures, and product branches — used only to write subsequent tasks, not output as an independent phase. If any sentence lacks a unique DSL definition, stop the affected scope and hand back to `/axb-dsl-refine`.
 
 ## Phase 2 -- Produce Setup and Foundational
