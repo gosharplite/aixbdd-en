@@ -412,6 +412,66 @@ class SectionReferenceTests(Fixture):
         result = self.run_check({"names"})
         self.assertEqual(result.findings, [])
 
+    def test_fenced_heading_does_not_register_a_phantom_section(self) -> None:
+        """#27 finding 5: a fenced `## 9. Example` must not make `§9` resolve.
+
+        This repository writes markdown about markdown, so a section of STANDARDS.md that
+        gains a fenced example containing a heading line is an ordinary edit. Without the
+        mask, that example declares section 9 and every dangling `§9` in the tree passes.
+        """
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text("```md\n## 9. Example\n```\n" + MINIMAL_STANDARDS, encoding="utf-8")
+        self.write("skills/x/SKILL.md", "See §9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§9", result.findings[0].message)
+
+    def test_three_level_reference_is_not_truncated_to_its_parent(self) -> None:
+        # `§4.3.1` used to be read as `§4.3`, so any three-level dangling reference passed
+        # whenever its parent existed. The full dotted run is matched now.
+        self.write("skills/x/SKILL.md", "See §4.3.1 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§4.3.1", result.findings[0].message)
+
+    def test_a_declared_three_level_heading_resolves(self) -> None:
+        # The positive half: matching the full run is only correct if `#### N.N.N` also
+        # registers, otherwise the fix trades a false pass for a false failure.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(
+            MINIMAL_STANDARDS + "\n#### 4.3.1 Operand Rule\n\n- a sub-sub-section\n",
+            encoding="utf-8",
+        )
+        self.write("skills/x/SKILL.md", "See §4.3.1 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_a_space_after_the_section_sign_is_still_checked(self) -> None:
+        # `§ 5.2` was not checked at all: the pattern required the digits to follow the `§`
+        # immediately.
+        self.write("skills/x/SKILL.md", "See § 9.9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+
+    def test_a_space_after_the_section_sign_still_resolves(self) -> None:
+        self.write("skills/x/SKILL.md", "Read § 5.2 for the channels.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_an_ancestor_resolves_when_only_its_child_is_declared(self) -> None:
+        # `### 8.4` implies section 8 exists. A reference to a parent is a reference to the
+        # section the child lives in. The fixture deliberately declares NO `## 8.` heading,
+        # so `§8` can only resolve through the ancestor rule — otherwise this test would
+        # pass on `MINIMAL_STANDARDS`' own `## 5.` and pin nothing.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(
+            MINIMAL_STANDARDS + "\n### 8.4 Only Declared As A Child\n\n- a nested label\n",
+            encoding="utf-8",
+        )
+        self.write("skills/x/SKILL.md", "See §8 for the semantics.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
     def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
         # `§11` is deliberately a number `MINIMAL_STANDARDS` does not declare. The first
         # version of this test cited `§4(d)` — and `## 4.` exists in the fixture — so it

@@ -478,7 +478,37 @@ def check_skill_references(result: Result, allowlist: dict, root: Path, sources:
                 )
 
 
-SECTION_REF_RE = re.compile(r"§(\d+(?:\.\d+)?)")
+SECTION_REF_RE = re.compile(r"§\s?(\d+(?:\.\d+)*)")
+# A numbered heading at any level the standard uses (`## 4.`, `### 5.1`, `#### 4.3.1`).
+HEADING_SECTION_RE = re.compile(r"^#{2,4}\s+(\d+(?:\.\d+)*)[\.\s]")
+
+
+def standard_sections(document: str) -> set[str]:
+    """Every section number STANDARDS.md declares, ancestors included.
+
+    Fenced lines are masked out because this repository writes markdown-about-markdown: an
+    example that contains a `## 9. Example` line is illustrating a heading, not declaring
+    one. Without the mask that phantom 9 enters `known` and every dangling `§9` in the tree
+    passes (#27 finding 5) — the same failure, in the same document, that `section_text`
+    already guards against with the same helper (#21 finding 10).
+
+    An ancestor is registered so `§4` resolves when only `§4.3` is declared: the standard
+    numbers its sections as a tree, and a reference to a parent is a reference to the
+    section the child lives in.
+    """
+    lines = document.splitlines()
+    fenced = fenced_line_mask(lines)
+    known: set[str] = set()
+    for line, inside_fence in zip(lines, fenced):
+        if inside_fence:
+            continue
+        match = HEADING_SECTION_RE.match(line)
+        if match is None:
+            continue
+        parts = match.group(1).split(".")
+        for depth in range(1, len(parts) + 1):
+            known.add(".".join(parts[:depth]))
+    return known
 
 
 def check_section_references(
@@ -493,14 +523,16 @@ def check_section_references(
     §11(x)` and `Apache-2.0, §11(x)` — the same citation, spelled differently — failed the
     gate falsely (#27 finding 4).
 
+    The reference pattern takes the whole dotted run and tolerates a space after the `§`
+    (#27 finding 5): truncating `§4.3.1` to `§4.3` passed any three-level dangling
+    reference whose parent existed, and `§ 5.2` was not checked at all.
+
     `STANDARDS.md` is skipped because it cites its own section numbers in prose.
     """
     defining = root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
     if not defining.is_file():
         return
-    document = defining.read_text(encoding="utf-8")
-    known = set(re.findall(r"^##+ (\d+)[\. ]", document, re.M))
-    known |= set(re.findall(r"^### (\d+\.\d+)", document, re.M))
+    known = standard_sections(defining.read_text(encoding="utf-8"))
 
     for path, lines in sources:
         if path == defining:
