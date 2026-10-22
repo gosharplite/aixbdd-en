@@ -12,7 +12,10 @@ Convert the interface `feature files` and `dsl.md` already delivered by `/axb-ds
 - `/axb-bdd` only advances work within a user-specified single interface `feature file` or a clearly identified block of it.
 - `/axb-bdd` has three entry points: `red`, `green`, and `refactor`; only one entry point is used per invocation.
 - A single invocation may sequentially advance multiple slices within the specified scope, but only one slice is handled at a time.
-- If `/axb-bdd` is delegated by a single task of `/axb-implement`, the delegated scope is that task's `Test Scope` (normally one interface `feature file`), and its definition of done is that whole `Test Scope` being green. Advance it one slice at a time, exactly as the preceding bullet allows — one slice locked on at a time, each taking its own green light — and stop at the `Test Scope` boundary rather than swallowing later tasks.
+- If `/axb-bdd` is delegated by a single task of `/axb-implement`, the delegated scope is that task's `Test Scope` (normally one interface `feature file`), and you advance it one slice at a time, exactly as the preceding bullet allows — one slice locked on at a time, each taking its own green light — stopping at the `Test Scope` boundary rather than swallowing later tasks.
+- The delegated definition of done depends on the `requested step`, because each entry point starts from a different premise:
+  - `red` and `green` — the `Test Scope` ends fully green. (`green` starts from the red signal, so its DoD is the scope turning green.)
+  - `refactor` — the `Test Scope` starts green by definition, so "green" alone is satisfied on entry and proves nothing. The DoD is that the behavior-preserving cleanup was actually performed **and** the scope is still fully green afterwards; a delegation that reports done without having changed anything has not met it.
 - If a high-impact gap is found in the `feature file` or `dsl.md`, work must stop and be handed back to `/axb-dsl-refine` or the user-specified upstream process.
 
 # SOP

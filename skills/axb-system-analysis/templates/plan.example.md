@@ -115,7 +115,7 @@ This requirement's inventory finds `4` system interfaces.
 - Arrangement rationale: the frontend is nearly the earliest visible entry of all requirements, but the UI is already done by the PM via `/axb-ui-plan`; this wave only reviews whether its user flows and screens are implementable within current technical boundaries (no redo, no delegation); the payment end couples relatively loosely with the internal system and usually can be expanded independently from third-party docs first. Once "what users will experience" and "what the third party provides" are both confirmed, analyzing the backend afterwards makes it easier to decide API shapes and error feedback.
 - Delegation order:
   - 1. Review the PM's `ui/ui-plan.md` and `ui/*.html` for implementability — no delegation
-  - 2. Call `/axb-api-plan` for the third-party payment integration and webhook contract
+  - 2. Launch `/axb-api-plan` for the third-party payment integration and webhook contract
 
 #### Wave 2
 
@@ -127,5 +127,6 @@ This requirement's inventory finds `4` system interfaces.
   - Database analysis focuses on providing a persistent data model for the above flows, covering order life cycles, payment status, subscription status, retry records, and reconciliation fields.
 - Arrangement rationale: backend and database analysis highly depends on the two kinds of results converged in Wave 1 — what interactions and states the frontend really needs, and what callbacks, fields, and constraints the payment end actually provides. Only after these peripheral interfaces are clear can the backend and database be analyzed together, avoiding premature wrong assumptions in API design and schema modeling; this wave is also suitable for opening two sub-agents in parallel, delegating to the backend analysis skill and the database analysis skill respectively.
 - Delegation order:
-  - 1. Call `/axb-api-plan` for the backend order & subscription API
-  - 2. Call `/axb-data-plan` for the order, payment and subscription data model (distinct artifact boundary from the API contract, so not merged)
+  - 1. Launch `/axb-api-plan` for the backend order & subscription API
+  - 2. Launch `/axb-data-plan` for the order, payment and subscription data model (distinct artifact boundary from the API contract, so not merged)
+- Both entries may be launched in parallel, as the rationale above allows; the order fixes only which starts first.
