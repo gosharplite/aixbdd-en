@@ -69,33 +69,53 @@ test: check-python ## Run the checkers' own test suites
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
 	@$(RUN) -m unittest discover -s skills/axb-gherkin-and-dsl/scripts -p 'test_*.py'
 
-install-hooks: ## Symlink the tracked hook into .git/hooks, so the gate runs before every commit
+install-hooks: ## Install a stub into .git/hooks that runs the gate; survives branch switches
 	@hooks_dir=$$(git rev-parse --git-path hooks); \
-	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
+	stub=$$(pwd)/$(SCRIPTS)/hooks/pre-commit-stub; \
+	legacy=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
 	dest=$$hooks_dir/pre-commit; \
-	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
-		echo "already installed: $$dest"; \
-		exit 0; \
-	fi; \
-	if [ -e "$$dest" ]; then \
-		echo "refusing to overwrite an existing hook: $$dest" >&2; \
-		echo "Move it aside, or run 'git commit --no-verify' to skip the gate." >&2; \
-		exit 1; \
+	if [ -L "$$dest" ]; then \
+		if [ "$$(readlink "$$dest")" = "$$legacy" ]; then \
+			rm "$$dest"; \
+			echo "replacing the pre-stub symlink at $$dest"; \
+		else \
+			echo "refusing to overwrite a foreign symlink: $$dest -> $$(readlink "$$dest")" >&2; \
+			exit 1; \
+		fi; \
+	elif [ -e "$$dest" ]; then \
+		if grep -q '^# aixbdd-en-managed-hook$$' "$$dest" 2>/dev/null; then \
+			:; \
+		else \
+			echo "refusing to overwrite an existing hook: $$dest" >&2; \
+			echo "Move it aside, or run 'git commit --no-verify' to skip the gate." >&2; \
+			exit 1; \
+		fi; \
 	fi; \
 	mkdir -p "$$hooks_dir"; \
-	ln -s "$$target" "$$dest"; \
-	echo "installed: $$dest -> $$target"; \
-	echo "The gate now runs before every commit. Bypass with: git commit --no-verify"
+	cp "$$stub" "$$dest"; \
+	chmod +x "$$dest"; \
+	echo "installed: $$dest (a stub; the gate script is read from the current branch)"; \
+	echo "Bypass with: git commit --no-verify"
 
-uninstall-hooks: ## Remove the hook symlink, leaving any other hooks untouched
+uninstall-hooks: ## Remove the stub, leaving any other hooks untouched
 	@hooks_dir=$$(git rev-parse --git-path hooks); \
-	target=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
+	stub=$$(pwd)/$(SCRIPTS)/hooks/pre-commit-stub; \
+	legacy=$$(pwd)/$(SCRIPTS)/hooks/pre-commit; \
 	dest=$$hooks_dir/pre-commit; \
-	if [ -L "$$dest" ] && [ "$$(readlink "$$dest")" = "$$target" ]; then \
-		rm "$$dest"; \
-		echo "removed: $$dest"; \
+	if [ -L "$$dest" ]; then \
+		if [ "$$(readlink "$$dest")" = "$$legacy" ]; then \
+			rm "$$dest"; \
+			echo "removed: $$dest (pre-stub symlink)"; \
+		else \
+			echo "left alone: $$dest points at $$(readlink "$$dest")" >&2; \
+		fi; \
 	elif [ -e "$$dest" ]; then \
-		echo "left alone: $$dest is not this repository's hook symlink" >&2; \
+		if grep -q '^# aixbdd-en-managed-hook$$' "$$dest" 2>/dev/null; then \
+			rm "$$dest"; \
+			echo "removed: $$dest"; \
+		else \
+			echo "left alone: $$dest is not this repository's hook" >&2; \
+		fi; \
 	else \
 		echo "nothing to remove: no hook at $$dest"; \
 	fi

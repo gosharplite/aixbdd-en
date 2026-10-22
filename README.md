@@ -185,23 +185,31 @@ make help            # list targets
 ```
 
 **`make install-hooks` is the part that matters**, because a gate nobody runs cannot tell a
-clean tree from an unexamined one. It symlinks the tracked `scripts/hooks/pre-commit` into
-`.git/hooks/`, so the gate runs before every commit (~0.4s) and blocks the commit if any
-check fails. `git commit --no-verify` skips it, as git intends — a reminder, not a lock.
+clean tree from an unexamined one. It installs a small **stub** into `.git/hooks/pre-commit`
+that execs the tracked `scripts/hooks/pre-commit` from the current branch, so the gate runs
+before every commit (~0.4s) and blocks the commit if any check fails. `git commit
+--no-verify` skips it, as git intends — a reminder, not a lock.
 
-Two design points worth knowing:
+Three design points worth knowing:
 
 - **The gate checks the staged index, not the working tree.** A commit is built from the
   index, so with `git add -p` the two differ: a violation fixed on disk but still staged
   would pass a worktree check and land anyway. The hook snapshots the index
   (`git checkout-index -a --prefix=…`) and runs the checks against that snapshot.
-- **It is a symlink, not `core.hooksPath`.** `hooksPath` *replaces* git's hook directory,
-  which would disable every other hook you have; a pre-commit symlink adds one hook and
-  leaves the rest alone. It also refuses to overwrite an existing `pre-commit`, and
-  `make uninstall-hooks` removes only its own symlink.
+- **The installed file is a stub, not a symlink into the worktree.** The hook script only
+  exists on branches that carry it, and a symlink dangles elsewhere — which makes git treat
+  the hook as absent, so the gate would **vanish silently** the moment you switched to a
+  branch predating it. The stub always exists and **fails closed** when the script is
+  missing: an ungated commit is refused rather than allowed. That means committing on a
+  branch that predates the hook requires `git commit --no-verify` or a rebase — deliberate,
+  because silent ungating is exactly what the gate exists to prevent.
+- **Neither `core.hooksPath` nor a foreign hook is touched.** `hooksPath` *replaces* git's
+  hook directory, disabling every other hook you have; the stub adds one file instead. It
+  refuses to overwrite an existing `pre-commit`, and `make uninstall-hooks` removes only a
+  hook carrying its own marker line, leaving anything else intact.
 
-The hook is **git-native rather than forge-specific**: symlinks into `.git/hooks/` work
-identically on any remote or none, need no network, and survive a move away from any
+The hook is **git-native rather than forge-specific**: a file in `.git/hooks/` works
+identically on any remote or none, needs no network, and survives a move away from any
 particular hosting service. The trade-off is honest — this is local configuration, so each
 clone must run `make install-hooks` once, and **a fresh clone is ungated until someone does**.
 A forge-side gate would be universal but vendor-locked; this repository would rather be

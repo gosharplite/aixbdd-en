@@ -1,10 +1,12 @@
 #!/bin/sh
 # Run the repository's invariant gate before a commit.
 #
-# Installed by `make install-hooks`, which symlinks this file into `.git/hooks/pre-commit`.
-# A symlink rather than `core.hooksPath`, deliberately: hooksPath *replaces* git's hook
-# directory, which would disable every other hook the developer has and clobber any
-# existing setting. A pre-commit symlink adds one hook and touches nothing else.
+# Not installed directly. `make install-hooks` puts `pre-commit-stub` into
+# `.git/hooks/pre-commit`, and the stub execs this file from the current branch — so the
+# hook survives switching to a branch that predates it, failing closed rather than
+# vanishing. A stub rather than `core.hooksPath`, deliberately: hooksPath *replaces* git's
+# hook directory, which would disable every other hook the developer has and clobber any
+# existing setting.
 #
 # **It checks the index, not the working tree.** A commit is built from the index, so
 # `git add -p` usage makes the two differ: a violation fixed on disk but still staged
