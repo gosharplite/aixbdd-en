@@ -133,9 +133,11 @@ After `Must-check`, a backend or frontend cell takes one of two forms:
 1. It names channel labels and states the fact each must carry — `Must-check`: `Presented Result`: …;
    `Authoritative State`: ….
 2. Or, when the assertion is a single fact that inherently spans channels — a cross-surface
-   consistency check, or a negative fact — it states that fact directly in one clause:
-   `Must-check`: the screen and the backend discount status are consistent. Use this form only for
-   facts that genuinely span channels; a fact that belongs to one channel is stated on that channel.
+   consistency check — it states that fact directly in one clause:
+   `Must-check`: the screen and the backend discount status are consistent. Use this form **only** for
+   facts that genuinely span channels: a fact belonging to one channel is stated on that channel, which
+   is also why a negative fact on a single surface is a `Should Not Happen` assertion rather than a
+   use of this form.
 
 **For a CLI Then cell, only form 1 is conforming** — §7 requires every CLI Then to name its channel,
 and that requirement is not relaxed by this marker. See §7.2.
