@@ -332,8 +332,12 @@ Supporting files:
   fails (shape 14 in its worse direction), and that `ROOT` is honoured — the last because the
   pre-commit hook checks an index snapshot, not the worktree. Absence is constructed by setting
   `MODELITH=` rather than by stripping `PATH` (which fails on a machine with a system-wide
-  install and cannot reproduce absence once the lookup has run), and the suite scrubs `ROOT`,
-  `MAKEFLAGS` and `MFLAGS` so a caller's exports cannot retarget or defuse it.
+  install and cannot reproduce absence once the lookup has run), and the suite scrubs every
+  variable that steers `make` — `ROOT`, `MODELITH`, `MAKEFLAGS`, `MFLAGS` — so a caller's
+  exports cannot retarget or defuse it. The scrub list is **derived** from the same table that
+  builds the command line, and a test asserts every `run_make` knob is in it: keeping the two
+  lists apart shipped a version with `MODELITH` unscrubbed, so an exported `MODELITH=` broke
+  four tests and a stale `MODELITH=/path` silently redirected them.
 - `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`,
   and on success re-reads the captured output for `NOT CHECKED` lines, printing
   `gate passed, with gaps:` — a passing gate can still have skipped a check, and only the

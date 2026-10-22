@@ -20,10 +20,18 @@ were invisible to the exit code:
    lookup has run at parse time. `MODELITH` is now `?=` so a caller sets it, and the suite
    constructs absence directly with `MODELITH=`.
 
-Every test scrubs `ROOT`, `MAKEFLAGS` and `MFLAGS` from the environment it passes to
-`make`: the suite should construct its world, not inherit the caller's. An exported `ROOT`
-redirects a test at an arbitrary directory, and `make -i test` exports `MAKEFLAGS=i` into
-the sub-make, which turns every non-zero exit into a zero and defeats the drift assertions.
+Every test scrubs the variables that steer `make`: `ROOT` (which `ROOT ?= .` yields to),
+`MODELITH` (the override this suite itself relies on), and `MAKEFLAGS`/`MFLAGS` (which
+`make -i test` exports, turning every non-zero exit into a zero and defeating the drift
+assertions). The suite should construct its world, not inherit the caller's.
+
+The scrub list is **derived** from one table, `INTERFACE_VARS`, that also builds the
+command line, and a test asserts that every `run_make` knob appears in it. That is not
+tidiness: the first version kept the two lists apart and shipped without `MODELITH` in the
+scrub, so an exported `MODELITH=` broke four tests and a stale `MODELITH=/path` silently
+redirected them. A variable the design invites you to export in a shell profile is the
+likelier leak, not the unlikelier one — so ambient-leak coverage is a property of the
+mechanism here, rather than a per-variable memory.
 """
 
 from __future__ import annotations
@@ -42,7 +50,20 @@ MODELITH = shutil.which("modelith")
 # supplies its own (absent) source tree. Using a real path keeps the test about the source
 # branch rather than about the tool.
 STAND_IN = "/usr/bin/true"
-SCRUB = ("ROOT", "MAKEFLAGS", "MFLAGS")
+
+# **Every variable `run_make` treats as an interface must be in the scrub list.** One table
+# drives both the command line and the scrub, so a new knob cannot be added without being
+# scrubbed — the previous version kept the two in separate places and shipped with
+# `MODELITH` missing, which meant an exported `MODELITH=` broke four detection-dependent
+# tests and a stale path silently redirected them.
+INTERFACE_VARS = {"root": "ROOT", "modelith": "MODELITH"}
+# Not make variables: `extra_env` is how a test injects variables, so it is the injection
+# channel rather than a knob, and it is exactly what the scrub filters.
+NOT_KNOBS = frozenset({"extra_env"})
+# Not ours: make itself reads these. `MAKEFLAGS=i` (from `make -i`) makes the sub-make
+# ignore its own non-zero exit, defeating every drift assertion.
+MAKE_VARS = ("MAKEFLAGS", "MFLAGS")
+SCRUB = frozenset(INTERFACE_VARS.values()) | frozenset(MAKE_VARS)
 
 
 def scrubbed_env(extra: dict[str, str] | None = None) -> dict[str, str]:
@@ -65,17 +86,39 @@ def run_make(
     modelith: str | None = None,
     extra_env: dict[str, str] | None = None,
 ):
+    knobs = {"root": root, "modelith": modelith}
     command = ["make", *args]
-    if root is not None:
-        command.append(f"ROOT={root}")
-    if modelith is not None:
-        command.append(f"MODELITH={modelith}")
+    # Driven by INTERFACE_VARS, so the command line and the scrub cannot disagree about
+    # which knobs exist. `None` means "not set", and an empty string is meaningful
+    # (`MODELITH=` is how a test constructs absence), which is why the test is `is not None`.
+    for kwarg, value in knobs.items():
+        if value is not None:
+            command.append(f"{INTERFACE_VARS[kwarg]}={value}")
     return subprocess.run(
         command,
         cwd=DEFAULT_ROOT,
         capture_output=True,
         text=True,
         env=scrubbed_env(extra_env),
+    )
+
+
+def run_make_with_environment(args: list[str], environment: dict[str, str]):
+    """Run make with an environment supplied verbatim — the scrub deliberately lifted.
+
+    The suite scrubs `MODELITH`, so **no test going through `run_make` can observe make's
+    own handling of an exported `MODELITH`**. One property still needs exactly that: an
+    *environment* value must be honoured, which `:=` would overwrite and `?=` keeps. This
+    helper is the single named place the scrub is lifted, and it is deliberately not a
+    `run_make` knob — an escape hatch there would have made the knob guard carry an
+    exception, and an exception in the guard is where the next leak lives.
+    """
+    return subprocess.run(
+        ["make", *args],
+        cwd=DEFAULT_ROOT,
+        capture_output=True,
+        text=True,
+        env=environment,
     )
 
 
@@ -177,26 +220,103 @@ class DriftDetectionTests(unittest.TestCase):
 
         This also pins `MODELITH ?=`: an *environment* value is honoured, which `:=` would
         overwrite. (A command-line value would win either way, so a command-line-only test
-        cannot tell the two apart — the first version of this suite could not.)
+        cannot tell the two apart — the first version of this suite could not.) Because the
+        suite scrubs `MODELITH`, this is the one test that supplies its environment
+        verbatim, via the named helper above.
         """
         stripped = "/usr/bin:/bin"
         if shutil.which("modelith", path=stripped) is not None:
             self.skipTest("modelith is installed on the stripped PATH; cannot split the lookups")
 
-        result = run_make(
-            "check-model",
-            extra_env={"MODELITH": str(MODELITH), "PATH": stripped},
-        )
+        environment = {k: v for k, v in os.environ.items() if k not in MAKE_VARS}
+        environment["PATH"] = stripped
+        environment["MODELITH"] = str(MODELITH)
+
+        result = run_make_with_environment(["check-model"], environment)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("up to date", result.stdout)
+
+class AmbientEnvironmentTests(unittest.TestCase):
+    """The scrub list is a property of the mechanism, not per-variable memory.
+
+    Added after the review of #29 exported `MODELITH=` and broke four tests: the fix for
+    the absent-tool suite *minted* an override variable and did not add it to the scrub.
+    `MODELITH` is the likelier leak, not the unlikelier one — the target's own design
+    invites `export MODELITH=/path/to/tool` in a shell profile, and then a stale or empty
+    value silently redirects (a path) or breaks (an empty string) every
+    detection-dependent test, which are exactly the two directions ambient `ROOT` already
+    had.
+    """
+
+    def test_every_run_make_knob_is_scrubbed(self) -> None:
+        """The structural guard: a new knob cannot be added without being scrubbed.
+
+        `run_make`'s keyword parameters *are* the knobs. Each must appear in
+        `INTERFACE_VARS`, which is the single table feeding both the command line and the
+        scrub, so this fails the moment someone adds a parameter and forgets the list.
+        """
+        import inspect
+
+        knobs = {
+            name
+            for name, parameter in inspect.signature(run_make).parameters.items()
+            if parameter.kind is inspect.Parameter.KEYWORD_ONLY
+            and name not in NOT_KNOBS
+        }
+        self.assertEqual(
+            knobs,
+            set(INTERFACE_VARS),
+            "run_make grew or lost a knob; add it to INTERFACE_VARS so it is scrubbed too",
+        )
+        for variable in INTERFACE_VARS.values():
+            self.assertIn(variable, SCRUB, f"{variable} is an interface but is not scrubbed")
+        for variable in MAKE_VARS:
+            self.assertIn(variable, SCRUB)
+
+    def test_an_exported_modelith_is_scrubbed(self) -> None:
+        """The probe that found the residual, as a test.
+
+        Both directions matter: an empty export breaks detection-dependent tests, and a
+        stale *path* silently redirects them — so the assertion is on the scrub, not on one
+        symptom.
+        """
+        self.assertNotIn("MODELITH", scrubbed_env({"MODELITH": ""}))
+        self.assertNotIn("MODELITH", scrubbed_env({"MODELITH": "/nonexistent/modelith"}))
+
+    def test_an_exported_modelith_does_not_reach_the_clean_tree_run(self) -> None:
+        """End to end: the export must not change what the clean-tree run reports.
+
+        A pure scrub assertion could pass while `run_make` bypassed the helper, so this
+        checks the observable outcome too. It needs the tool, hence the skip.
+        """
+        if MODELITH is None:
+            self.skipTest("modelith not installed")
+        result = run_make(
+            "check-model",
+            extra_env={"MODELITH": "/nonexistent/modelith"},
+        )
+        self.assertIn("up to date", result.stdout)
+        self.assertNotIn("No such file", result.stdout + result.stderr)
+
+
+class AmbientSteeringTests(unittest.TestCase):
+    """The behavioural half of the scrub: dirty environments a caller can really create.
+
+    These need `modelith`, because each asserts that the *real* check ran despite the
+    environment. The pure scrub assertions live in `AmbientEnvironmentTests`, which needs
+    nothing — so the mechanism is still covered on a host without the tool.
+    """
+
+    def setUp(self) -> None:
+        if MODELITH is None:
+            self.skipTest("modelith not installed")
 
     def test_an_ambient_ROOT_does_not_redirect_the_clean_tree(self) -> None:
         """An exported `ROOT` must not reach the sub-make.
 
         `ROOT ?= .` yields to the environment, so a caller's export silently retargets
-        every assertion in this file. The scrub is what prevents it, and the round trip
-        through `scrubbed_env` is asserted here because a test that builds a dirty dict
-        and never passes it proves nothing — which is what this test replaced.
+        every assertion in this file. The round trip through `scrubbed_env` is asserted
+        here because a test that builds a dirty dict and never passes it proves nothing.
         """
         self.assertNotIn("ROOT", scrubbed_env({"ROOT": "/nowhere"}))
         result = run_make("check-model", extra_env={"ROOT": "/nonexistent-root"})
@@ -206,9 +326,9 @@ class DriftDetectionTests(unittest.TestCase):
     def test_makeflags_cannot_make_drift_pass(self) -> None:
         """`make -i test` exports MAKEFLAGS=i; the sub-make must not inherit it.
 
-        Without the scrub, `make check-model` ignores its own non-zero exit, so the drift
-        assertion below would read a real failure as a pass — a test reporting success
-        while the thing under test failed.
+        Without the scrub, `make check-model` ignores its own non-zero exit, so a drift
+        assertion reads a real failure as a pass — a test reporting success while the thing
+        under test failed.
         """
         self.assertNotIn("MAKEFLAGS", scrubbed_env())
         self.assertNotIn("MFLAGS", scrubbed_env())
@@ -218,9 +338,7 @@ class DriftDetectionTests(unittest.TestCase):
             generated = models / "aixbdd.modelith.md"
             generated.write_text(generated.read_text() + "\n<!-- hand edit -->\n")
 
-            result = run_make(
-                "check-model", root=snapshot, extra_env={"MAKEFLAGS": "-i"}
-            )
+            result = run_make("check-model", root=snapshot, extra_env={"MAKEFLAGS": "-i"})
         # Scrubbed, so the drift still fails as it must.
         self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
 
