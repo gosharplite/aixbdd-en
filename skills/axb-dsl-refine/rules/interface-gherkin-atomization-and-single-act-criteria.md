@@ -43,18 +43,18 @@ Rule: complete three-guess flow
 
 ## Calibration Set
 
-- Any new atomization criterion must simultaneously reproduce all anchors in the table below; this table is also the convergence basis for issue #5.
+- Any new atomization criterion must simultaneously reproduce all anchors in the table below. Every row is self-contained: none depends on an external tracker item or an unshipped artifact, so the table can be applied as-is.
 
 | Case | Subject | Is the sub-assertion entailed? | Verdict |
 | --- | --- | --- | --- |
 | Rule 2 Good Example: `the match has ended` + `Alice wins` | one winning event | Yes (winning ⟹ match ended) | Merge into one Rule |
-| CLI successfully creates workspace: response content + exit 0 (tellme#4 Q2) | one successful creation | Yes (under the contract definition, the response and verdict channel are determined by the success outcome) | Merge into one Rule |
+| A CLI command that creates a workspace: `the response body names the new workspace` + `the exit code is 0` | one successful creation | Yes (under the command contract, the response content and the verdict channel are determined by the success outcome) | Merge into one Rule |
 | Rule 1 Good Example: the three three-guess Rules | three mutually independent results | No | Split into three Rules |
 | Rule 6 Good Example: the "reject / no history added / turn unchanged" of not-your-turn | three prohibitions that can each fail | No (each prohibition can fail independently) | Split into three Rules |
-| tellme#4 W2: `reuses the session workspace` + `workspace still holds the file` | depends on the domain definition of `reuse the workspace` | Determined by domain definition | Merge if entailed, else split |
-| tellme#4 D2: `configuration resolved` + each sub-resolution result | depends on the domain definition of `resolved` | Determined by domain definition | Merge if entailed, else split |
+| Container outcome: `reuses the session workspace` + `the workspace still holds the file` | one container outcome whose contents are the assertion | Depends on the domain definition of `reuse the workspace` | Merge if entailed, else split |
+| Aggregate outcome: `configuration resolved` + each sub-resolution result | one aggregate outcome whose parts are the assertion | Depends on the domain definition of `resolved` | Merge if entailed, else split |
 
-- W2 and D2 are structurally isomorphic (container and its contents, aggregate and its sub-results), so they **must receive the same verdict**; if the domain definition cannot answer, supplement the domain semantics first — do not split one and merge the other.
+- The last two rows are structurally isomorphic (container and its contents; aggregate and its sub-results), so they **must receive the same verdict**; if the domain definition cannot answer, supplement the domain semantics first — do not split one and merge the other.
 
 ## Good Example
 

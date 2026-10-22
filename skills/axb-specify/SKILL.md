@@ -16,7 +16,8 @@ disable-model-invocation: true
 2. READ Read `templates/spec.template.md`, `templates/spec.example.md`, `templates/requirements-checklist.md`, and `templates/requirements-checklist.example.md` to confirm the fixed structure of the spec and checklist.
 3. READ Read `rules/feature-directory-naming-and-output-placement-criteria.md` to confirm the naming and output placement of the next `NNN-<slug>` plan package.
 4. READ Read `.agents/constitution/CONSTITUTION.md`, `.agents/constitution/shared.md`, `.agents/constitution/skills/axb-specify/spec.md`, and `.agents/constitution/skills/axb-specify/requirements-checklist.md`, treating their rules as constraints above the local artifact standards.
-5. WRITE Create `specs/plans/NNN-<slug>/` and `checklists/`, and initialize the `truth-delta.md` skeleton; this phase does not create or modify `specs/truth/**`.
+5. WRITE Create `specs/plans/NNN-<slug>/` and `checklists/`; this phase does not create or modify `specs/truth/**`.
+6. DELEGATE Call `/axb-truth-delta` to initialize `truth-delta.md` from its fixed template (plan package, truth root, and the four truth owner sections). Do not hand-author the skeleton here: the format is owned by `/axb-truth-delta`, and a locally invented one drifts from the four-owner table its Phase 3 assumes. No truth owner has acted yet, so this is an initialization-only handoff carrying no change rows.
 
 ## Phase 2 -- Converge requirement gaps and the clarify strategy
 

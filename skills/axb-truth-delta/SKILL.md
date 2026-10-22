@@ -16,6 +16,7 @@ disable-model-invocation: true
 2. READ Read `rules/truth-change-classification-and-granularity-criteria.md` to confirm owner sections, action classification, semantic-unit granularity, and NOOP record rules.
 3. READ If `truth-delta.md` does not exist yet, read `templates/truth-delta.md` and `templates/truth-delta.example.md` to confirm the initialization skeleton and finished look.
 4. WRITE If `truth-delta.md` does not exist yet, create the file in the current plan package and fill in the plan package, truth root, and the four truth owner sections.
+5. THINK If the caller is `/axb-specify` at plan creation and no truth owner has acted yet, treat this as an initialization-only handoff: create the skeleton exactly per `templates/truth-delta.md` and leave the four owner tables as placeholders. Do not invent change rows, and do not record `NOOP` for owners that have not run.
 
 ## Phase 2 -- Converge this round's truth change records
 

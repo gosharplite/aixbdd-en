@@ -27,7 +27,7 @@ disable-model-invocation: true
 
 1. READ When ordering and parallel grouping need judgment, read `rules/wave-dependency-ordering-and-parallel-grouping-criteria.md`.
 2. THINK Arrange Waves by interface dependency, truth-change risk, and parallelizability; confirm every interface has a clear downstream handover: API interfaces are taken over by `/axb-api-plan`, data interfaces by `/axb-data-plan`; frontend interfaces do NOT delegate to `/axb-ui-plan` and are instead taken over by reviewing the PM's existing `ui/**` artifacts; a CLI interface shipping an interactive TUI has its terminal UX surface (screens, keybindings, state transitions) already produced by the PM's `/axb-ui-plan` (terminal mode) and is handled like the frontend — review-only, no redo, no delegation; if it is a plain line-oriented CLI interface (no corresponding analysis planner, and the PM produced no ui-plan), hand off to its contract owner `/axb-dsl-refine` at delivery time.
-3. WRITE Write the system interface inventory, Waves, analysis focus, and delegation rationale into `specs/plans/NNN-<slug>/plan.md`.
+3. WRITE Write the system interface inventory (with each interface's `Delegation` taker), the Waves with their analysis focus and `Delegation order`, and the delegation rationale into `specs/plans/NNN-<slug>/plan.md`. Every interface must carry exactly one taker and every Wave an order, because Phase 4 delegates strictly by them.
 
 ## Phase 4 -- Delegate planners and deliver
 

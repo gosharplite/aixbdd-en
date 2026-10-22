@@ -12,14 +12,14 @@ Convert the interface `feature files` and `dsl.md` already delivered by `/axb-ds
 - `/axb-bdd` only advances work within a user-specified single interface `feature file` or a clearly identified block of it.
 - `/axb-bdd` has three entry points: `red`, `green`, and `refactor`; only one entry point is used per invocation.
 - A single invocation may sequentially advance multiple slices within the specified scope, but only one slice is handled at a time.
-- If `/axb-bdd` is delegated by a single task of `/axb-implement`, it must obey that task's single `slice`, single `requested step`, and current scope, and must not swallow subsequent tasks along the way.
+- If `/axb-bdd` is delegated by a single task of `/axb-implement`, the delegated scope is that task's `Test Scope` (normally one interface `feature file`), and its definition of done is that whole `Test Scope` being green. Advance it one slice at a time, exactly as the preceding bullet allows — one slice locked on at a time, each taking its own green light — and stop at the `Test Scope` boundary rather than swallowing later tasks.
 - If a high-impact gap is found in the `feature file` or `dsl.md`, work must stop and be handed back to `/axb-dsl-refine` or the user-specified upstream process.
 
 # SOP
 
 ## Phase 1 -- Align upstream deliverables, test entry, and this round's scope
 
-1. READ Read the user requirements, the specified interface `feature file` or its clearly identified block, the same module's `dsl.md`, the interface root shared `dsl.md` rows actually used by that feature, the relevant test code and product code; confirm whether this round's entry is `red`, `green`, or `refactor`, and the scope the user has delimited; if delegated by `/axb-implement`, additionally confirm that the current task authorizes only a single `slice` and a single `requested step`.
+1. READ Read the user requirements, the specified interface `feature file` or its clearly identified block, the same module's `dsl.md`, the interface root shared `dsl.md` rows actually used by that feature, the relevant test code and product code; confirm whether this round's entry is `red`, `green`, or `refactor`, and the scope the user has delimited; if delegated by `/axb-implement`, additionally confirm that task's `Test Scope` (the boundary not to exceed), the current `requested step`, and the first slice to advance within it.
 2. READ If you need to confirm how modular truth is carried over or the project's existing symlink policy, read `rules/modular-truth-on-demand-symlink-criteria.md`.
 3. READ If you need to confirm which upstream deliverables this skill can accept, when work must stop, or which gaps should be handed back upstream, read `rules/upstream-delivery-handoff-criteria.md`.
 4. THINK If this round's scope, loaded DSL, interface boundaries, or upstream deliverables still have high-impact gaps, first converge the minimal necessary clarification points.

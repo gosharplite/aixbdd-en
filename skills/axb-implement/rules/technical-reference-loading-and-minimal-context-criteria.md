@@ -1,7 +1,7 @@
 # Rule 1 - Before implementing, first read the phase shared reference or the current task's `Read`
 
 - Level: `MUST`
-- If the current task is in the `Feature File` phase or the `NFR Refactoring` phase, before implementing you must first read the documents and specific sections designated by that phase's `Shared Must Read`.
+- If the current task belongs to a phase that declares a `Shared Must Read` — Phase 3 `Test Alignment & Implementation`, the Phase 4A / 4B / 4C Feature phases, or Phase 4W `Witness Pins` — you must first read the documents and specific sections that phase's `Shared Must Read` designates before implementing.
 - If the current task is in `Setup`, `Foundational`, or another general phase, before implementing you must first read the documents and specific sections designated by that task's `Read`.
 - Reference requirements are precise loads; reading only other parts of the same file does not satisfy them.
 - If the same round contains multiple legitimate `[P]` tasks, confirm separately that each task's necessary references are covered.

@@ -31,4 +31,4 @@ disable-model-invocation: true
 
 ## Phase 4 -- Deliver and hand off follow-ups
 
-1. WRITE Report to the user the acceptance feature files written, clarified decisions, remaining `# [need clarification]`, and whether it can proceed to `/axb-system-analysis` or `/axb-dsl-refine`.
+1. WRITE Report to the user the acceptance feature files written, clarified decisions, remaining `# [need clarification]`, and whether it can proceed to the next step, which is `/axb-ui-plan` (web `frontend`, or `cli` with a TUI) or `/axb-technical-research` (a plain line-oriented CLI skips the UI plan). Do not name `/axb-system-analysis` or `/axb-dsl-refine`: both read artifacts these intermediate steps produce (`research.md` from `/axb-technical-research`, `plan.md` from `/axb-system-analysis`) and cannot run yet.

@@ -1,4 +1,4 @@
-# Tech Stack Summary: Photo Date-Album Organization
+# Tech Stack Summary
 
 ## Tech Stack Overview
 
@@ -34,7 +34,7 @@
 | Frontend BDD techstack | `Playwright` | webapp E2E, runs frontend Gherkin |
 | Backend BDD techstack | `behave` | backend E2E, runs backend Gherkin, verifies API and authoritative state |
 
-## Technologies Not Introduced in This Development
+## Excluded Technologies
 
 - `React` or other frontend frameworks
 - Third-party drag-and-drop packages (e.g. `SortableJS`)

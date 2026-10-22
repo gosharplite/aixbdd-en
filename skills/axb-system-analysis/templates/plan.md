@@ -74,16 +74,19 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
    - Endpoint type: `{{SYSTEM_INTERFACE_1_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_1_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_1_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_1_DELEGATION}}`
 
 2. `{{SYSTEM_INTERFACE_2_NAME}}`
    - Endpoint type: `{{SYSTEM_INTERFACE_2_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_2_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_2_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_2_DELEGATION}}`
 
 3. `{{SYSTEM_INTERFACE_3_NAME}}`
    - Endpoint type: `{{SYSTEM_INTERFACE_3_ENDPOINT_TYPE}}`
    - Main interfaces: `{{SYSTEM_INTERFACE_3_PRIMARY_INTERFACE}}`
    - Requirement basis: `{{SYSTEM_INTERFACE_3_REQUIREMENT_EVIDENCE}}`
+   - Delegation: `{{SYSTEM_INTERFACE_3_DELEGATION}}`
 
 <!--
   Add or remove entries per the technical endpoints actually involved in the requirement.
@@ -102,6 +105,8 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   - `{{WAVE_1_ANALYSIS_FOCUS_1}}`
   - `{{WAVE_1_ANALYSIS_FOCUS_2}}`
 - Arrangement rationale: `{{WAVE_1_PLANNING_RATIONALE}}`
+- Delegation order:
+  - `{{WAVE_1_DELEGATION_ORDER_1}}`
 
 #### Wave 2
 
@@ -112,6 +117,8 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   - `{{WAVE_2_ANALYSIS_FOCUS_1}}`
   - `{{WAVE_2_ANALYSIS_FOCUS_2}}`
 - Arrangement rationale: `{{WAVE_2_PLANNING_RATIONALE}}`
+- Delegation order:
+  - `{{WAVE_2_DELEGATION_ORDER_1}}`
 
 <!--
   Planning must observe:
@@ -121,4 +128,12 @@ This requirement's inventory finds `{{SYSTEM_INTERFACE_COUNT}}` system interface
   4. Wave ordering must reflect requirement dependencies; later Waves mean greater dependence on earlier waves' analysis results — do not group arbitrarily.
   5. This section only plans the analysis order, wave splits, and per-wave focus; do not expand each interface's actual analysis output here.
   6. If the requirement involves more endpoint interfaces or longer dependency chains, continue the `#### Wave N` skeleton downward.
+  7. Every inventoried interface must carry exactly one `Delegation` value: a planner skill
+     (`/axb-api-plan`, `/axb-data-plan`), or an explicit taker (`Taken over by: ...`) when no
+     planner applies — the PM's existing `ui/**` reviewed read-only, or `/axb-dsl-refine` for a
+     CLI contract. Rule 2 of `rules/analysis-interface-delegation-and-planner-mapping-criteria.md`
+     decides which; do not leave it blank.
+  8. `Delegation order` records the order this Wave's planners are actually invoked, including
+     merged handoffs (Rule 3). Rule 1 delegates strictly by this order, so an omitted or
+     reordered list is an unimplementable plan rather than a formatting slip.
 -->
