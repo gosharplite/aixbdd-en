@@ -125,9 +125,11 @@ All initial files were translated from aixbdd-tmg's original Traditional Chinese
 - The **default project language is flipped to English** (STANDARDS.md "Project Language" section and
   the §2/§3 defaults); it remains project-declarable, so projects may still declare any language.
 - **Fixed DSL contract tokens are English**: `DSL Sentence`, `Gherkin Params`, `Data Table Params`,
-  `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, and the §5.1/§5.2
+  `Default Params`, `…Implementation Semantics`, `Not supported`/`Supported:`, the §5.1/§5.2
   sub-labels (`How`, `State landing`, `Write-back`, `No-check`/`Must-check`, `Presented Result`,
-  `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`, `Should Not Happen`). They were
+  `Authoritative State`, `Re-read Confirmation`, `Cross-Perspective`, `Should Not Happen`), and the
+  §7 CLI channels (`Invocation`, `Working state`, `Landing`, `Stdout`, `Stderr`, `Exit Code`,
+  `Filesystem State`). They were
   Chinese in upstream AIxBDD and are renamed in this repo; the audit script accepts both the English
   header `DSL Sentence` and the legacy Chinese header `DSL 句型`, so upstream-era DSL files still audit
   cleanly. These tokens remain fixed — do not translate them per project language. The Chinese Gherkin
