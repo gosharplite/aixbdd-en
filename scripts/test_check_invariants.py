@@ -11,6 +11,7 @@ small repository carrying its own registry and allowlist.
 from __future__ import annotations
 
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -326,6 +327,309 @@ class SectionParserTests(Fixture):
         self.assertEqual(result.findings, [], result.findings)
 
 
+class SkillReferenceTests(Fixture):
+    """Invariant 7 — the #2 escapes: `/plan`, `/plan-with-class-diagram`, `/skill-engineering`."""
+
+    def test_nonexistent_skill_is_caught(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/plan` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/plan", result.findings[0].message)
+
+    def test_all_three_historically_shipped_escapes_are_caught(self) -> None:
+        # #2's actual defect text. None carries the `axb-` prefix, which is exactly why an
+        # `axb-`-only pattern passed all three and the check missed its own motivating cases.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        for name in ("/plan", "/plan-with-class-diagram", "/skill-engineering"):
+            self.write("skills/x/SKILL.md", f"Follow up via `{name}`.\n")
+            result = self.run_check({"names"})
+            self.assertEqual(len(result.findings), 1, (name, result.findings))
+            self.assertIn(name, result.findings[0].message)
+
+    def test_http_route_is_not_a_command_reference_when_allowlisted(self) -> None:
+        # `FastAPI /ws` is an endpoint, not a skill. The exemption is a line-scoped
+        # allowlist entry, not a set in the checker: only the allowlist gets the staleness
+        # test, so an in-code exemption would be one nothing keeps honest.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_http_route_without_an_allowlist_entry_is_caught(self) -> None:
+        # The same line, unexempted: the guard above must not be a global tolerance for
+        # every non-skill token, or the exemption has become a rule.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/ws", result.findings[0].message)
+        # And the refusal teaches the route, at the point of failure rather than in a doc.
+        self.assertIn("allowlist", result.findings[0].message)
+        self.assertIn("staleness-checked", result.findings[0].message)
+
+    def test_real_skill_passes(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/axb-real` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_unbackticked_prose_is_not_a_reference(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Then run plan as described.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_case_drift_is_caught(self) -> None:
+        """#27 finding 7: `/Plan` produced no finding.
+
+        Invariant 4 taught this repository that drift arrives in neighbouring spellings,
+        not canonical ones, so the stale-reference check must flag what *looks like* a
+        command reference and does not resolve — not only what already looks canonical.
+        """
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/Plan` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/Plan", result.findings[0].message)
+
+    def test_separator_drift_is_caught(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/skill_engineering` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/skill_engineering", result.findings[0].message)
+
+    # --- the guard, written before the widening -------------------------------------
+    # Admitting any case and `_` also admits path-shaped spans if the pattern is loosened
+    # carelessly. Each of these is a slash token that must stay unreported, in the same
+    # way `/usr/local` would look like a command to a `[^\`]+` pattern.
+    PATH_SHAPED_TOKENS = (
+        "/dev/null",
+        "/usr/local",
+        "/etc/hosts",
+        "/plans/",
+        "/",
+        "/v1/things.html",
+        "/order-success.html",
+    )
+
+    def test_path_shaped_slash_tokens_are_not_command_references(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        for token in self.PATH_SHAPED_TOKENS:
+            with self.subTest(token=token):
+                self.write("skills/x/SKILL.md", f"Write the output to `{token}` first.\n")
+                result = self.run_check({"names"})
+                self.assertEqual(result.findings, [], (token, result.findings))
+
+    def test_a_command_with_a_trailing_argument_is_not_a_reference(self) -> None:
+        # `` `/axb-bdd green` `` is a command *plus* an argument. It is a mode of a real
+        # skill, not an unresolvable name, and the real tree has four of these.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Run `/axb-bdd green` before editing.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+
+class SectionReferenceTests(Fixture):
+    """Invariant 8 — the #6 finding 2 escape: a section name that does not exist."""
+
+    # The licence exemption is data, so the fixtures that exercise it must supply the data.
+    # A hard-coded exception in the checker could not be tested this way, which is the
+    # point of finding 3 applied to finding 4's own fix.
+    LICENCE_ENTRY = {
+        "section-references": [
+            {
+                "path": "README.md",
+                "line_matches": "(?:Apache|MIT|BSD|GPL|Mozilla|Creative Commons)[^§]*§",
+            }
+        ]
+    }
+
+    def test_nonexistent_section_is_caught(self) -> None:
+        self.write("skills/x/SKILL.md", "Read the §9.9 section.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§9.9", result.findings[0].message)
+
+    def test_real_section_passes(self) -> None:
+        self.write("skills/x/SKILL.md", "Read §5.2 for the channels.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_parent_section_number_passes(self) -> None:
+        self.write("skills/x/SKILL.md", "See §4 and §7.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [])
+
+    def test_fenced_heading_does_not_register_a_phantom_section(self) -> None:
+        """#27 finding 5: a fenced `## 9. Example` must not make `§9` resolve.
+
+        This repository writes markdown about markdown, so a section of STANDARDS.md that
+        gains a fenced example containing a heading line is an ordinary edit. Without the
+        mask, that example declares section 9 and every dangling `§9` in the tree passes.
+        """
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text("```md\n## 9. Example\n```\n" + MINIMAL_STANDARDS, encoding="utf-8")
+        self.write("skills/x/SKILL.md", "See §9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§9", result.findings[0].message)
+
+    def test_three_level_reference_is_not_truncated_to_its_parent(self) -> None:
+        # `§4.3.1` used to be read as `§4.3`, so any three-level dangling reference passed
+        # whenever its parent existed. The full dotted run is matched now.
+        self.write("skills/x/SKILL.md", "See §4.3.1 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§4.3.1", result.findings[0].message)
+
+    def test_a_declared_three_level_heading_resolves(self) -> None:
+        # The positive half: matching the full run is only correct if `#### N.N.N` also
+        # registers, otherwise the fix trades a false pass for a false failure.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(
+            MINIMAL_STANDARDS + "\n#### 4.3.1 Operand Rule\n\n- a sub-sub-section\n",
+            encoding="utf-8",
+        )
+        self.write("skills/x/SKILL.md", "See §4.3.1 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_a_space_after_the_section_sign_is_still_checked(self) -> None:
+        # `§ 5.2` was not checked at all: the pattern required the digits to follow the `§`
+        # immediately.
+        self.write("skills/x/SKILL.md", "See § 9.9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+
+    def test_a_space_after_the_section_sign_still_resolves(self) -> None:
+        self.write("skills/x/SKILL.md", "Read § 5.2 for the channels.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_an_ancestor_resolves_when_only_its_child_is_declared(self) -> None:
+        # `### 8.4` implies section 8 exists. A reference to a parent is a reference to the
+        # section the child lives in. The fixture deliberately declares NO `## 8.` heading,
+        # so `§8` can only resolve through the ancestor rule — otherwise this test would
+        # pass on `MINIMAL_STANDARDS`' own `## 5.` and pin nothing.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(
+            MINIMAL_STANDARDS + "\n### 8.4 Only Declared As A Child\n\n- a nested label\n",
+            encoding="utf-8",
+        )
+        self.write("skills/x/SKILL.md", "See §8 for the semantics.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_standards_md_is_checked_like_any_other_file(self) -> None:
+        """#27 finding 6: the self-skip exempted the one file that renumbering breaks.
+
+        `STANDARDS.md` cites its own section numbers throughout, and those resolve against
+        the same `known` set, so the skip was never needed for them. It did mean that the
+        file most likely to orphan references — a renumbering there is a single edit that
+        can strand every citation in the tree, which is what happened in #15 — was the one
+        file the check could not see.
+        """
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(MINIMAL_STANDARDS + "\nSee §99.1 above.\n", encoding="utf-8")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§99.1", result.findings[0].message)
+
+    def test_standards_md_self_citations_resolve(self) -> None:
+        # The positive: removing the skip must not fail the file's own §4 / §5.2 prose.
+        standards = self.root / "skills" / "axb-gherkin-and-dsl" / "STANDARDS.md"
+        standards.write_text(MINIMAL_STANDARDS + "\n§4 and §5.2 are its own sections.\n", encoding="utf-8")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_the_refusal_teaches_the_exemption_route(self) -> None:
+        """The failure text is where someone under pressure to pass the gate actually reads.
+
+        Invariant 7's message named the allowlist from the start; invariant 8's only said
+        "does not name a section", so the discipline was visible in one lane and not the
+        other. Both must point at the staleness-checked route, because that is the moment
+        an exemption gets invented in code otherwise.
+        """
+        self.write("skills/x/SKILL.md", "See §9.9 for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        message = result.findings[0].message
+        self.assertIn("section-references", message)
+        self.assertIn("allowlist", message)
+        self.assertIn("staleness-checked", message)
+
+    def test_licence_section_reference_is_not_a_standards_reference(self) -> None:
+        # `§11` is deliberately a number `MINIMAL_STANDARDS` does not declare. The first
+        # version of this test cited `§4(d)` — and `## 4.` exists in the fixture — so it
+        # passed with the exclusion deleted and pinned nothing (#27 finding 2). The number
+        # has to be absent from the fixture, or the test cannot tell "excluded" from
+        # "happens to exist", and the exemption ships unpinned.
+        self.write("README.md", "Required by Apache-2.0 §11(x), verbatim.\n")
+        self._write_allowlist(self.LICENCE_ENTRY)
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
+    def test_the_same_section_number_unprefixed_is_caught(self) -> None:
+        # The control for the test above. Without it the licence test could be passing
+        # because `§11` resolves, or because section references are not checked at all —
+        # the same indistinguishability that made the original vacuous.
+        self.write("skills/x/SKILL.md", "See §11(x) for the detail.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("§11", result.findings[0].message)
+
+    def test_licence_citations_without_the_allowlist_entry_are_caught(self) -> None:
+        # The entry is what exempts the line, not the word "Apache" appearing in it. Same
+        # line as the passing fixture above, allowlist empty.
+        self.write("README.md", "Required by Apache-2.0 §11(x), verbatim.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+
+    def test_licence_spellings_the_byte_window_missed(self) -> None:
+        """#27 finding 4's two false failures, both of which a 16-char window rejected.
+
+        `Apache License 2.0 §11(x)` (spelled out) and `Apache-2.0, §11(x)` (one comma) are
+        the same citation as the canonical form. The window required the literal
+        `Apache-N.N ` immediately before the `§`, so both failed the gate falsely. A
+        line-scoped predicate cannot lose this way: it asks whether the line names a
+        licence at all, wherever the name sits.
+        """
+        for citation in (
+            "Required by Apache License 2.0 §11(x), verbatim.\n",
+            "See Apache-2.0, §11(x) for the notice.\n",
+            "Distributed under the Apache License, Version 2.0 — §11(x) applies.\n",
+            "Under MIT License §11(x) as well.\n",
+        ):
+            with self.subTest(citation=citation):
+                self.write("README.md", citation)
+                self._write_allowlist(self.LICENCE_ENTRY)
+                result = self.run_check({"names"})
+                self.assertEqual(result.findings, [], (citation, result.findings))
+
+    def test_the_predicate_does_not_degrade_into_a_keyword_search(self) -> None:
+        """A licence name *after* the `§` is not a licence citation.
+
+        The predicate is directional — the name has to precede the reference — so these
+        stay caught even with the entry present. Both lines contain the string `Apache`,
+        which is what a careless `contains` entry would have swallowed whole.
+        """
+        for line in (
+            "Mention §11(x) before naming the licence.\n",
+            "§11(x) is defined by Apache somewhere else entirely.\n",
+        ):
+            with self.subTest(line=line):
+                self.write("README.md", line)
+                self._write_allowlist(self.LICENCE_ENTRY)
+                result = self.run_check({"names"})
+                self.assertEqual(len(result.findings), 1, (line, result.findings))
+                self.assertIn("§11", result.findings[0].message)
+
+
 class NormativeRefTests(Fixture):
     """Invariant 5 — #16's normative forward reference. Reports, never fails."""
 
@@ -376,29 +680,93 @@ class AllowlistTests(Fixture):
         self.assertEqual(len(result.findings), 1, result.findings)
 
 
+def stale_allowlist_entries(root: Path) -> list[str]:
+    """Every allowlist entry that no longer matches live text, in every shape it can take.
+
+    Extracted rather than inlined so the scan itself can be tested: an untestable guard is
+    how #27 finding 1 happened — the comment claimed this discipline while nothing enforced
+    it. `AreTheGuardsThemselvesGuarded` below drives this helper over fixtures that are
+    stale on purpose.
+    """
+    allowlist = checker.load_allowlist(root)
+    stale: list[str] = []
+    for invariant, entries in allowlist.items():
+        if invariant.startswith("$"):
+            continue
+        for entry in entries:
+            path = root / entry["path"]
+            if not path.is_file():
+                stale.append(f"{invariant}: missing file {entry['path']}")
+                continue
+            text = path.read_text(encoding="utf-8")
+            needle = entry.get("contains")
+            if needle is not None and needle not in text:
+                stale.append(f"{invariant}: {entry['path']} no longer contains {needle!r}")
+            pattern = entry.get("line_matches")
+            if pattern is not None and not any(
+                re.search(pattern, line) for line in text.splitlines()
+            ):
+                stale.append(f"{invariant}: {entry['path']} has no line matching {pattern!r}")
+    return stale
+
+
 class RepoAllowlistStillNeededTests(unittest.TestCase):
     """Every entry in the real allowlist must still match something.
 
     An entry that stops matching is a stale exemption — and a stale exemption silently
-    widens what the check tolerates. This is the executable-baseline criterion from #12.
+    widens what the check tolerates. This is the executable-baseline criterion from #12,
+    and since #27 finding 3 it is the *only* exemption mechanism, so it now covers the
+    slash-token and licence exemptions too.
     """
 
     def test_every_allowlist_entry_matches_live_text(self) -> None:
-        root = checker.DEFAULT_ROOT
-        allowlist = checker.load_allowlist(root)
-        stale: list[str] = []
-        for invariant, entries in allowlist.items():
-            if invariant.startswith("$"):
-                continue
-            for entry in entries:
-                path = root / entry["path"]
-                if not path.is_file():
-                    stale.append(f"{invariant}: missing file {entry['path']}")
-                    continue
-                needle = entry.get("contains")
-                if needle is not None and needle not in path.read_text(encoding="utf-8"):
-                    stale.append(f"{invariant}: {entry['path']} no longer contains {needle!r}")
-        self.assertEqual(stale, [], "stale allowlist entries")
+        self.assertEqual(
+            stale_allowlist_entries(checker.DEFAULT_ROOT), [], "stale allowlist entries"
+        )
+
+
+class AreTheGuardsThemselvesGuarded(Fixture):
+    """The staleness scan must be able to fail, in both entry shapes.
+
+    #27 finding 2 is the general lesson: an exclusion pinned by a test that passes with the
+    exclusion deleted is pinned by nothing. The same question applies to this scan, so each
+    shape gets a fixture that is stale on purpose and must be named.
+    """
+
+    def test_stale_contains_entry_is_reported(self) -> None:
+        self.write("skills/x/SKILL.md", "no route mentioned here\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("/ws", stale[0])
+
+    def test_stale_line_matches_entry_is_reported(self) -> None:
+        self.write("skills/x/SKILL.md", "nothing licence-shaped on this line\n")
+        self._write_allowlist(
+            {"section-references": [{"path": "skills/x/SKILL.md", "line_matches": "Apache-\\d"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("Apache", stale[0])
+
+    def test_entry_pointing_at_a_missing_file_is_reported(self) -> None:
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/gone/SKILL.md", "contains": "`/ws`"}]}
+        )
+        stale = stale_allowlist_entries(self.root.resolve())
+        self.assertEqual(len(stale), 1, stale)
+        self.assertIn("missing file", stale[0])
+
+    def test_a_live_entry_is_not_reported(self) -> None:
+        # The negative fixture: without it the scan could report everything and pass all
+        # three tests above while being useless.
+        self.write("skills/x/SKILL.md", "The client connects to the FastAPI `/ws` endpoint.\n")
+        self._write_allowlist(
+            {"skill-references": [{"path": "skills/x/SKILL.md", "contains": "`/ws`"}]}
+        )
+        self.assertEqual(stale_allowlist_entries(self.root.resolve()), [])
 
 
 if __name__ == "__main__":

@@ -224,12 +224,16 @@ clone must run `make install-hooks` once, and **a fresh clone is ungated until s
 A forge-side gate would be universal but vendor-locked; this repository would rather be
 portable than universal.
 
-`make check` runs five groups:
+`make check` runs one group per target below — deliberately not "runs *N* groups", because a
+count is a second place the list can go stale. This README already records what happens when one
+vocabulary is enumerated in three places (the plan-package placeholder drifted before #11 settled
+it); a number in front of the table has the same failure mode and none of the utility.
 
 | Target | Checks |
 | --- | --- |
 | `make check-paths` | no `specs/` root other than `plans`/`truth`; no truth artifact read as package-local; the plan-package placeholder always prefixed by `specs/plans/` |
 | `make check-tokens` | the fixed-token registry agrees with its definitions, and tokens are spelled canonically wherever they are named |
+| `make check-names` | every backticked slash command names a real skill, and every `§N` names a real `STANDARDS.md` section |
 | `make check-refs` | **candidate report, never fails** — normative references to issues, and rules asserting a delivery gate (a human decides whether the check behind each exists) |
 | `make check-params` | every `Default Params` cell in the example tree conforms to `STANDARDS.md` §4.3 — the operand rule included |
 | `make check-audit` | the DSL topology audit against `skills/axb-gherkin-and-dsl/examples/ecommerce/features`, this repo's own worked example |
@@ -239,16 +243,40 @@ invariants need human triage: a citation that records provenance is fine while o
 follow to comply is a defect, and a delivery claim is only wrong if the named check does not exist.
 A check that fails on candidates it cannot triage gets disabled, so it reports instead.
 
+### Exemptions are the expensive part
+
+Three checker PRs (#21, #23, #27) have put **zero** defects in their invariants and every one of
+their defects in the exemption machinery: a ±40-character context window, an operand read off the
+value instead of the parameter, a 16-character lookbehind, a hard-coded exempt-token set, a
+`STANDARDS.md` self-skip. That base rate is how review effort and fixture budget should be spent,
+and it is why three rules are not negotiable here:
+
+1. **Every exemption lives in `invariant_allowlist.json`.** An exemption expressed in code is one
+   the staleness test cannot see, and a comment claiming the test covers it is worse than no
+   comment — that was #27's finding 1, inside the checker that polices false claims.
+2. **Every allowlist entry has a staleness test.** `scripts/test_check_invariants.py` fails if an
+   entry stops matching live text, in either entry shape, and the scan itself has fixtures that
+   are stale on purpose — a guard nothing has watched fail is a guard that may not exist.
+3. **No exemption is expressible as a byte radius.** "Within 16 characters of the word Apache" is
+   a rule about text layout, not about meaning: it excluded `Apache-2.0 §11(x)` and missed
+   `Apache License 2.0 §11(x)` and `Apache-2.0, §11(x)`, which are the same citation. If a
+   predicate cannot be written as "the line matches this", the exemption is not understood yet.
+
+The consequence is worth stating plainly, because it is the *why* that keeps the rules from being
+optimised away: **the exemption is the expensive part of adding a check.** Budget the fixtures
+there, and review there, first.
+
 Supporting files:
 
 - `scripts/check_invariants.py` — stdlib only, PEP 723 header, hand-runnable with `--root`,
-  `--only paths|tokens|refs`.
+  `--only paths|tokens|names|refs`.
 - `scripts/token_registry.json` — **the single enumeration** of fixed contract vocabulary. Other
   surfaces may name tokens because their readers need them, but they do not define them; where a
   surface duplicates a list, the registry is what keeps the copies honest.
-- `scripts/invariant_allowlist.json` — executable allowlist for the known mention-to-forbid cases
-  (text that names a forbidden shape in order to forbid it). The test suite fails if an entry goes
-  stale, so an exemption cannot silently widen.
+- `scripts/invariant_allowlist.json` — the **only** place an exemption may live. Two entry shapes:
+  `{path, contains}` for a mention-to-forbid, and `{path, line_matches}` for a context predicate
+  that a substring cannot express (a licence name anywhere before the `§` on the line). Both are
+  staleness-tested; see "Exemptions are the expensive part" above.
 - `scripts/check_dsl_default_params.py` — executes `STANDARDS.md` §4.3 against the example tree's
   `Default Params` cells. Seeded from #19 and the seed for #24 item 5.
 - `scripts/hooks/` — the tracked gate: `pre-commit` (snapshots the index, runs `make check`),

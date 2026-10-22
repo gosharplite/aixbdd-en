@@ -6,11 +6,14 @@
     "memory and omitted three of four real hits — so this is data the script reads, and the",
     "script's own test suite asserts every entry is still needed.",
     "",
-    "Shape: { \"<invariant>\": [ { \"path\": \"<repo-relative>\", \"contains\": \"<substring, optional>\" } ] }",
-    "Omitting `contains` allowlists the whole file for that invariant.",
+    "Shape: { \"<invariant>\": [ { \"path\": \"<repo-relative>\", \"contains\": \"<substring, optional>\", \"line_matches\": \"<regex, optional>\" } ] }",
+    "Omitting both predicates allowlists the whole file for that invariant. Supplying both",
+    "narrows the entry: a line must satisfy both. No shape can widen an exemption from a",
+    "code-level window, because nothing in a byte radius can be staleness-checked.",
     "",
     "Every entry below is a MENTION-TO-FORBID: the text names a forbidden shape in order to",
-    "forbid it. Dropping the mention would delete the rule it carries."
+    "forbid it. Dropping the mention would delete the rule it carries. The one exception is",
+    "`skill-references`, which allowlists a token that is not a command at all."
   ],
 
   "specs-roots": [
@@ -38,5 +41,26 @@
     }
   ],
 
-  "token-registry": []
+  "token-registry": [],
+
+  "skill-references": [
+    {
+      "$note": "`/ws` is a FastAPI WebSocket route, not a command. Needed as of b359a6c by the three live mentions below; when the last of them goes, the staleness test in test_check_invariants.py fails and this entry must go with it.",
+      "path": "skills/axb-tasks/templates/tasks.example.md",
+      "contains": "`/ws`"
+    },
+    {
+      "$note": "Second and last file that mentions the route: axb-implement's Definition-of-Done example.",
+      "path": "skills/axb-implement/rules/definition-of-done-verification-and-writeback-criteria.md",
+      "contains": "`/ws`"
+    }
+  ],
+
+  "section-references": [
+    {
+      "$note": "A `§` on a line naming a licence refers to that licence, not to STANDARDS.md. Line-scoped on purpose: the 16-char lookbehind this replaced required the literal `Apache-N.N ` spelling, so `Apache License 2.0 §11(x)` and `Apache-2.0, §11(x)` failed the gate falsely. The staleness test proves the pattern still matches a line here; it does not prove the exemption is load-bearing, because today's only citation (`§4(d)`) resolves against STANDARDS.md anyway.",
+      "path": "README.md",
+      "line_matches": "(?:Apache|MIT|BSD|GPL|Mozilla|Creative Commons)[^§]*§"
+    }
+  ]
 }

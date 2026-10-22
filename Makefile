@@ -34,7 +34,7 @@ EXAMPLES := skills/axb-gherkin-and-dsl/examples/ecommerce/features
 # files on disk. Tooling always comes from this worktree; only the inspected tree moves.
 ROOT ?= .
 
-.PHONY: help check check-paths check-tokens check-refs check-params check-audit check-python test \
+.PHONY: help check check-paths check-tokens check-names check-refs check-params check-audit check-python test \
         install-hooks uninstall-hooks
 
 help: ## List targets
@@ -54,6 +54,9 @@ check-paths: check-python ## Invariants 1-3: specs/ roots, truth paths, plan-pac
 check-tokens: check-python ## Invariant 4: fixed-token registry vs definitions and naming surfaces
 	@$(RUN) $(CHECKER) --root $(ROOT) --only tokens --quiet-candidates
 
+check-names: check-python ## Invariants 7-8: every slash command and §section reference resolves
+	@$(RUN) $(CHECKER) --root $(ROOT) --only names --quiet-candidates
+
 check-refs: check-python ## Invariants 5-6: candidate report for normative refs and asserted gates
 	@$(RUN) $(CHECKER) --root $(ROOT) --only refs
 
@@ -63,7 +66,7 @@ check-params: check-python ## STANDARDS §4.3: every Default Params cell conform
 check-audit: check-python ## DSL topology audit of this repo's own example tree
 	@$(RUN) skills/axb-gherkin-and-dsl/scripts/audit_feature_dsl_topology.py --root $(ROOT)/$(EXAMPLES)
 
-check: check-paths check-tokens check-refs check-params check-audit ## Run everything (default gate)
+check: check-paths check-tokens check-names check-refs check-params check-audit ## Run everything (default gate)
 
 test: check-python ## Run the checkers' own test suites (invariants, params, hook lifecycle)
 	@$(RUN) -m unittest discover -s $(SCRIPTS) -p 'test_*.py' -v
