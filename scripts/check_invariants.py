@@ -18,6 +18,12 @@ delivery claim may name a real check or none), and a check that fails on candida
 cannot triage gets deleted. The triage criterion is printed with each candidate instead.
 
 See issue #12 for why each invariant exists and which PR's defect it would have caught.
+
+**Exemptions are not written in this file.** Any tolerance goes into `scripts/invariant_allowlist.json`,
+which the test suite re-checks for staleness entry by entry, because three checker PRs (#21, #23,
+#27) have put zero defects in their invariants and every one of their defects in the exemption
+machinery — a character window, an operand, a lookbehind, an in-code set, a self-skip. A tolerance
+expressed here is one nothing can tell has gone stale (#27 finding 1).
 """
 
 from __future__ import annotations
@@ -438,7 +444,16 @@ def check_token_registry(result: Result, allowlist: dict, root: Path, sources: l
 # Invariants 7-8: references that must resolve (fail)
 # --------------------------------------------------------------------------------------
 
-SKILL_REF_RE = re.compile(r"`/([a-z][a-z0-9-]*)`")
+# The generous shape on purpose (#27 finding 7): any case, `-` and `_`. `/Plan` and
+# `/skill_engineering` are drift, not prose, and invariant 4 taught this repository that
+# drift arrives in neighbouring spellings rather than canonical ones.
+#
+# What keeps it from becoming a false-positive machine is the closing backtick: the span
+# must be **exactly** `/name`, so a further `/` or a file extension disqualifies it. That
+# single anchor is why `/usr/local`, `/dev/null`, `/plans/` and bare `/` stay unreported
+# without any second guard — and `SkillReferenceTests.PATH_SHAPED_TOKENS` pins that, so a
+# later loosening of this pattern fails a test instead of failing the gate in CI.
+SKILL_REF_RE = re.compile(r"`/([A-Za-z][A-Za-z0-9_-]*)`")
 
 
 def check_skill_references(result: Result, allowlist: dict, root: Path, sources: list[Source]) -> None:

@@ -380,6 +380,56 @@ class SkillReferenceTests(Fixture):
         result = self.run_check({"names"})
         self.assertEqual(result.findings, [])
 
+    def test_case_drift_is_caught(self) -> None:
+        """#27 finding 7: `/Plan` produced no finding.
+
+        Invariant 4 taught this repository that drift arrives in neighbouring spellings,
+        not canonical ones, so the stale-reference check must flag what *looks like* a
+        command reference and does not resolve — not only what already looks canonical.
+        """
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/Plan` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/Plan", result.findings[0].message)
+
+    def test_separator_drift_is_caught(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Proceed to `/skill_engineering` when ready.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(len(result.findings), 1, result.findings)
+        self.assertIn("/skill_engineering", result.findings[0].message)
+
+    # --- the guard, written before the widening -------------------------------------
+    # Admitting any case and `_` also admits path-shaped spans if the pattern is loosened
+    # carelessly. Each of these is a slash token that must stay unreported, in the same
+    # way `/usr/local` would look like a command to a `[^\`]+` pattern.
+    PATH_SHAPED_TOKENS = (
+        "/dev/null",
+        "/usr/local",
+        "/etc/hosts",
+        "/plans/",
+        "/",
+        "/v1/things.html",
+        "/order-success.html",
+    )
+
+    def test_path_shaped_slash_tokens_are_not_command_references(self) -> None:
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        for token in self.PATH_SHAPED_TOKENS:
+            with self.subTest(token=token):
+                self.write("skills/x/SKILL.md", f"Write the output to `{token}` first.\n")
+                result = self.run_check({"names"})
+                self.assertEqual(result.findings, [], (token, result.findings))
+
+    def test_a_command_with_a_trailing_argument_is_not_a_reference(self) -> None:
+        # `` `/axb-bdd green` `` is a command *plus* an argument. It is a mode of a real
+        # skill, not an unresolvable name, and the real tree has four of these.
+        (self.root / "skills" / "axb-real").mkdir(parents=True)
+        self.write("skills/x/SKILL.md", "Run `/axb-bdd green` before editing.\n")
+        result = self.run_check({"names"})
+        self.assertEqual(result.findings, [], result.findings)
+
 
 class SectionReferenceTests(Fixture):
     """Invariant 8 — the #6 finding 2 escape: a section name that does not exist."""
