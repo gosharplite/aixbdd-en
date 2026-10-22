@@ -18,13 +18,43 @@ from typing import Iterable
 
 INTERFACE_KINDS = ("backend", "frontend", "cli")
 
+# One bilingual keyword table drives every keyword-bearing regex below. Earlier
+# revisions split these into a bilingual step regex plus English-only structural
+# regexes, which made zh-TW structure invisible to the parser: `場景:` never
+# ended the description block (all following steps skipped -> false PASS) and
+# `功能:` never started one (description prose parsed as steps -> false FAILED).
+# Do not reintroduce per-regex keyword lists; add a keyword here instead.
+GHERKIN_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "feature": ("Feature", "功能"),
+    "rule": ("Rule", "規則"),
+    "background": ("Background", "背景"),
+    "scenario_outline": ("Scenario Outline", "場景大綱", "劇本大綱"),
+    "scenario": ("Scenario", "場景", "劇本"),
+    "example": ("Example", "Examples", "例子", "範例"),
+    "given": ("Given", "假設", "假如", "假定"),
+    "when": ("When", "當"),
+    "then": ("Then", "那麼"),
+    "and": ("And", "而且", "並且", "同時"),
+    "but": ("But", "但是"),
+}
+
+
+def keyword_alternation(*groups: str) -> str:
+    """Build a regex alternation over the given keyword groups (longest first)."""
+    words = [word for group in groups for word in GHERKIN_KEYWORDS[group]]
+    words.sort(key=len, reverse=True)
+    return "|".join(re.escape(word) for word in words)
+
+
 # Latin step keywords are conventionally separated from the sentence by
 # whitespace; CJK step keywords are conventionally written with no separator
 # (e.g. `當使用者登入`). Requiring whitespace after CJK keywords made every
 # Chinese step a non-step, so unmapped Chinese sentences passed the audit.
 STEP_RE = re.compile(
-    r"^\s*(?:(?:Given|When|Then|And|But|\*)\s+|"
-    r"(?:假如|假設|假定|當|那麼|而且|並且|同時|但是))(.+?)\s*$"
+    rf"^\s*(?:(?:{keyword_alternation('given', 'when', 'then', 'and', 'but')}"
+    rf"|{re.escape('*')})\s+|"
+    rf"(?:{keyword_alternation('given', 'when', 'then', 'and', 'but')}))"
+    r"(.+?)\s*$"
 )
 # NOTE: the Chinese keywords above are functional Gherkin keywords (Chinese
 # locale) and must not be removed or translated; see STANDARDS.md "Project
@@ -34,12 +64,16 @@ STEP_RE = re.compile(
 
 # Feature/Rule headings open a free-text description block. Gherkin allows no
 # steps in that region, so a keyword-initial line there is description prose.
-FEATURE_DESCRIPTION_HEADING_RE = re.compile(r"^\s*(?:Feature|Rule)\s*:")
+FEATURE_DESCRIPTION_HEADING_RE = re.compile(
+    rf"^\s*(?:{keyword_alternation('feature', 'rule')})\s*:"
+)
 # These headings end the description block and open a step-bearing section.
 STEP_SECTION_HEADING_RE = re.compile(
-    r"^\s*(?:Background|Scenario Outline|Scenario|Example)\s*:"
+    rf"^\s*(?:{keyword_alternation('background', 'scenario_outline', 'scenario', 'example')})\s*:"
 )
-DOCSTRING_DELIMITER = '"""'
+# Gherkin accepts `"""` and ``` as docstring delimiters. Both must be tracked,
+# or a keyword-initial docstring line is parsed as a step.
+DOCSTRING_DELIMITERS = ('"""', "```")
 PLACEHOLDER_RE = re.compile(r"\{[^{}]+\}")
 SEPARATOR_CELL_RE = re.compile(r"^:?-{3,}:?$")
 
@@ -193,17 +227,25 @@ def parse_feature(path: Path, errors: list[str]) -> list[GherkinStep]:
         return []
 
     steps: list[GherkinStep] = []
-    in_docstring = False
+    open_docstring: str | None = None
     in_description = False
     for line_number, line in enumerate(text.splitlines(), start=1):
         stripped = line.strip()
 
-        if in_docstring:
-            if stripped.endswith(DOCSTRING_DELIMITER):
-                in_docstring = False
+        if open_docstring is not None:
+            # Gherkin requires the closing delimiter alone on its line, so an
+            # equality check is correct. `endswith` would terminate early on a
+            # content line that merely ends with the delimiter (an embedded
+            # snippet), and the rest of the docstring would be read as steps.
+            if stripped == open_docstring:
+                open_docstring = None
             continue
-        if stripped.startswith(DOCSTRING_DELIMITER):
-            in_docstring = True
+        opener = next(
+            (d for d in DOCSTRING_DELIMITERS if stripped.startswith(d)), None
+        )
+        if opener is not None:
+            # `"""json` opens a typed docstring; it is not a one-line docstring.
+            open_docstring = opener
             continue
 
         if FEATURE_DESCRIPTION_HEADING_RE.match(line):
@@ -313,27 +355,17 @@ def audit(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
     for row in all_rows:
         rows_by_phrase[row.phrase].append(row)
     for phrase, rows in sorted(rows_by_phrase.items()):
-        if len(rows) < 2:
-            continue
-        scopes = [row.scope for row in rows]
-        root_scoped = [row for row in rows if row.scope == "root"]
-        repeated_in_one_scope = len(set(scopes)) != len(scopes)
-        if root_scoped or repeated_in_one_scope:
-            # Either a root row is shadowed by a module row (a lookup in that
-            # module merges root with same-module and hits twice), or one DSL file
-            # declares the same sentence twice. Both are genuinely ambiguous.
+        if len(rows) > 1:
+            # `rules/interface-module-and-dsl-unique-ownership-criteria.md`
+            # Rule 4 is MUST-level and forbids keeping duplicate rows "in root
+            # and module, or across multiple modules". This stays an error for
+            # evidence reasons and because agents treat a green audit as
+            # permission to proceed; the message names the remedy so the fix is
+            # obvious rather than merely forbidden.
             errors.append(
                 f"DSL Sentence `{phrase}` has multiple authoritative locations: "
-                f"{format_locations(rows, root)}"
-            )
-        else:
-            # Sibling modules may each legitimately need the sentence: a lookup
-            # merges root with same-module only, so every module still resolves to
-            # exactly one row. Recommend promotion instead of failing the audit.
-            warnings.append(
-                f"the DSL Sentence `{phrase}` is defined in {len(rows)} sibling modules "
-                f"({format_locations(rows, root)}); each module still resolves to exactly one row, "
-                "but consider promoting it to the interface-root dsl.md"
+                f"{format_locations(rows, root)}; only one is allowed (Rule 4) — "
+                "promote it to the interface-root dsl.md and remove the module rows"
             )
 
     compiled_rows = [(row, compile_phrase(row.phrase)) for row in all_rows]
@@ -391,7 +423,7 @@ def audit(root: Path) -> tuple[list[str], list[str], dict[str, int]]:
     return errors, warnings, stats
 
 
-def interface_roots(root: Path) -> list[Path]:
+def interface_roots(root: Path) -> tuple[list[Path], list[str]]:
     """Resolve the given root into the interface roots that should be audited.
 
     The audit contract is per interface (`backend`, `frontend`, `cli`), because a
@@ -400,28 +432,55 @@ def interface_roots(root: Path) -> list[Path]:
     per-interface audit on the parent reported every correctly placed feature as
     "not exactly one functional-module level deep", so the parent is accepted and
     expanded here instead of being rejected.
+
+    Mode is decided structurally — does the root look like a shared features root
+    or a single interface root — not by where `.feature` files happen to sit. An
+    earlier revision probed for depth-2 features, so one misplaced
+    `backend/stray.feature` flipped the whole run into interface mode and
+    re-created the spurious-error cascade it was meant to prevent.
+
+    Returns the interface roots plus coverage errors: every interface directory
+    is audited whether or not its name is a known kind, and any `.feature` file
+    outside an audited interface is an error rather than a silent skip.
     """
+    errors: list[str] = []
     if not root.is_dir():
-        return [root]
-    candidates = [root / kind for kind in INTERFACE_KINDS if (root / kind).is_dir()]
-    if not candidates:
-        return [root]
-    # If the root already has features at functional-module depth it is itself an
-    # interface root whose module happens to share an interface name; audit it
-    # directly instead of expanding.
-    for feature_path in root.rglob("*.feature"):
-        if len(feature_path.relative_to(root).parts) == 2:
-            return [root]
-    return candidates
+        return [root], errors
+
+    child_dirs = [path for path in sorted(root.iterdir()) if path.is_dir()]
+    known = [path for path in child_dirs if path.name in INTERFACE_KINDS]
+    # A root carrying its own `dsl.md` is an interface root: the shared root DSL
+    # belongs to an interface, never to the parent that contains interfaces.
+    if root.joinpath("dsl.md").is_file() or not known:
+        return [root], errors
+
+    # Parent mode: every direct child directory is an interface, so an interface
+    # kind added later needs no script change.
+    roots = child_dirs
+    covered = {
+        feature_path
+        for interface_root in roots
+        for feature_path in interface_root.rglob("*.feature")
+    }
+    for feature_path in sorted(root.rglob("*.feature")):
+        if feature_path not in covered:
+            errors.append(
+                "a feature sits outside every interface directory: "
+                f"{relative_display(feature_path, root)}; place it under an "
+                "interface root such as backend/, frontend/ or cli/"
+            )
+    return roots, errors
 
 
-def audit_target(root: Path) -> tuple[list[Path], list[str], list[str], dict[str, int]]:
-    roots = interface_roots(root)
+def audit_target(
+    root: Path,
+) -> tuple[list[Path], list[str], list[str], dict[str, int]]:
+    roots, coverage_errors = interface_roots(root)
     if len(roots) == 1 and roots[0] == root:
         errors, warnings, stats = audit(root)
-        return roots, errors, warnings, stats
+        return roots, coverage_errors + errors, warnings, stats
 
-    errors: list[str] = []
+    errors: list[str] = list(coverage_errors)
     warnings: list[str] = []
     stats = {
         "features": 0,
@@ -448,7 +507,7 @@ def print_report(
     stats: dict[str, int],
 ) -> None:
     print(f"Feature / DSL topology audit: {root}")
-    if len(roots) > 1:
+    if len(roots) > 1 or roots[0] != root:
         print(
             "Interface roots audited: "
             + ", ".join(interface_root.name for interface_root in roots)

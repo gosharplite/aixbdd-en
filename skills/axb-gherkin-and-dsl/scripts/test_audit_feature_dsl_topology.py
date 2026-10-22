@@ -81,14 +81,14 @@ class ParentRootTests(AuditTestCase):
         self.assertEqual(errors, [])
         self.assertEqual(stats["features"], 1)
 
-    def test_module_named_like_an_interface_is_not_expanded(self) -> None:
-        # A module that happens to be named "cli" must not be mistaken for an
-        # interface directory when the root is already an interface root.
-        write(self.root / "cli" / "a.feature", feature("Given a mapped step"))
-        write(self.root / "cli" / "dsl.md", dsl("a mapped step"))
-        roots, errors, _warnings, _stats = self.audit(self.root)
+    def test_interface_root_with_shared_dsl_is_not_expanded(self) -> None:
+        # A root carrying its own dsl.md is an interface root, even when one of
+        # its modules shares an interface kind's name.
+        write(self.root / "dsl.md", dsl("a shared step"))
+        write(self.root / "cli" / "a.feature", feature("Given a shared step"))
+        write(self.root / "cli" / "dsl.md", dsl("a shared step"))
+        roots, _errors, _warnings, _stats = self.audit(self.root)
         self.assertEqual(roots, [self.root.resolve()])
-        self.assertEqual(errors, [])
 
     def test_real_depth_error_still_reported(self) -> None:
         # Expansion must not mask a genuinely mis-nested feature.
@@ -203,16 +203,16 @@ class DeadRootRowTests(AuditTestCase):
 
 
 class DuplicateScopeTests(AuditTestCase):
-    """Finding #1.6: sibling-module duplication is not ambiguous."""
+    """Rule 4 forbids duplicate rows across modules, so this stays an error."""
 
-    def test_sibling_module_duplicate_warns_but_passes(self) -> None:
+    def test_sibling_module_duplicate_is_an_error(self) -> None:
         write(self.root / "m1" / "a.feature", feature("Given a mapped step", name="F1"))
         write(self.root / "m2" / "b.feature", feature("Given a mapped step", name="F2"))
         write(self.root / "m1" / "dsl.md", dsl("a mapped step"))
         write(self.root / "m2" / "dsl.md", dsl("a mapped step"))
-        _roots, errors, warnings, _stats = self.audit(self.root)
-        self.assertEqual(errors, [])
-        self.assertTrue(any("sibling modules" in w for w in warnings), warnings)
+        _roots, errors, _warnings, _stats = self.audit(self.root)
+        self.assertTrue(any("multiple authoritative locations" in e for e in errors), errors)
+        self.assertTrue(any("promote it to the interface-root" in e for e in errors), errors)
 
     def test_same_module_duplicate_is_an_error(self) -> None:
         write(self.root / "m1" / "a.feature", feature("Given a mapped step"))
@@ -227,6 +227,126 @@ class DuplicateScopeTests(AuditTestCase):
         _roots, errors, _warnings, _stats = self.audit(self.root)
         self.assertTrue(any("multiple authoritative locations" in e for e in errors), errors)
         self.assertTrue(any("matched 2 DSL rows" in e for e in errors), errors)
+
+
+class ParentCoverageTests(AuditTestCase):
+    """Parent mode must audit every interface and never silently skip a feature."""
+
+    def _correct_tree(self) -> None:
+        write(self.root / "backend" / "m1" / "a.feature", feature("Given a mapped step"))
+        write(self.root / "backend" / "m1" / "dsl.md", dsl("a mapped step"))
+
+    def test_unlisted_interface_directory_is_audited(self) -> None:
+        # An interface kind the script does not know by name must still be
+        # audited; otherwise a whole interface escapes with a green result.
+        self._correct_tree()
+        write(
+            self.root / "api" / "users" / "u.feature", feature("Given totally unmapped")
+        )
+        write(self.root / "api" / "users" / "dsl.md", dsl("some other sentence"))
+        _roots, errors, _warnings, stats = self.audit(self.root)
+        self.assertEqual(stats["features"], 2, "the api interface must be audited")
+        self.assertTrue(any("[api]" in e and "totally unmapped" in e for e in errors), errors)
+
+    def test_feature_outside_every_interface_is_an_error(self) -> None:
+        self._correct_tree()
+        write(self.root / "stray.feature", feature("Given stray unmapped"))
+        _roots, errors, _warnings, _stats = self.audit(self.root)
+        self.assertTrue(
+            any("outside every interface directory" in e for e in errors), errors
+        )
+
+    def test_misplaced_feature_does_not_invert_mode(self) -> None:
+        # One forbidden placement must be reported as itself, not flip the run
+        # into interface mode and error every correctly placed feature.
+        self._correct_tree()
+        write(self.root / "frontend" / "m1" / "a.feature", feature("Given a mapped step"))
+        write(self.root / "frontend" / "m1" / "dsl.md", dsl("a mapped step"))
+        write(self.root / "backend" / "stray.feature", feature("Given a mapped step"))
+        _roots, errors, _warnings, _stats = self.audit(self.root)
+        self.assertTrue(
+            any("must not be placed directly in the interface root" in e for e in errors),
+            errors,
+        )
+        self.assertFalse(
+            any("exactly one functional-module level deep" in e for e in errors),
+            f"correctly placed features must not be flagged: {errors}",
+        )
+
+
+class BilingualHeadingTests(AuditTestCase):
+    """Structural keywords must be bilingual too, not just step keywords."""
+
+    def test_zh_scenario_heading_ends_description_block(self) -> None:
+        # `Feature:` opens the description block; the zh-TW `場景:` must close it,
+        # otherwise every following step is skipped and the audit falsely passes.
+        write(
+            self.root / "m1" / "a.feature",
+            "Feature: F\n"
+            "  這是描述文字\n"
+            "\n"
+            "  場景: e1\n"
+            "    當使用者未登入\n",
+        )
+        write(self.root / "m1" / "dsl.md", dsl("whatever"))
+        _roots, errors, _warnings, stats = self.audit(self.root)
+        self.assertEqual(stats["steps"], 1, "the zh-TW scenario step must be parsed")
+        self.assertTrue(any("使用者未登入" in e for e in errors), errors)
+
+    def test_zh_feature_and_rule_start_description_block(self) -> None:
+        write(
+            self.root / "m1" / "a.feature",
+            "功能: 中文功能\n"
+            "  當使用者輸入錯誤時，這是描述文字\n"
+            "  規則: r1\n"
+            "    例子: e1\n"
+            "      當使用者登入\n",
+        )
+        write(self.root / "m1" / "dsl.md", dsl("使用者登入"))
+        _roots, errors, _warnings, stats = self.audit(self.root)
+        self.assertEqual(errors, [])
+        self.assertEqual(stats["steps"], 1)
+
+
+class DocstringFormTests(AuditTestCase):
+    """Findings 6 and 7: both delimiters, and an equality-based close."""
+
+    def test_backtick_docstring_is_skipped(self) -> None:
+        write(
+            self.root / "m1" / "a.feature",
+            "Feature: F\n"
+            "  Rule: r\n"
+            "    Example: e\n"
+            "      Given a mapped step\n"
+            "      Then verify:\n"
+            "        ```\n"
+            "        Given raw text inside a backtick docstring\n"
+            "        ```\n",
+        )
+        write(self.root / "m1" / "dsl.md", dsl("a mapped step", "verify:"))
+        _roots, errors, _warnings, stats = self.audit(self.root)
+        self.assertEqual(errors, [])
+        self.assertEqual(stats["steps"], 2)
+
+    def test_delimiter_mid_line_does_not_close_docstring(self) -> None:
+        # A docstring line that merely ends with the delimiter is content, not a
+        # terminator; treating it as one leaks the rest of the block as steps.
+        write(
+            self.root / "m1" / "a.feature",
+            "Feature: F\n"
+            "  Rule: r\n"
+            "    Example: e\n"
+            "      Given a mapped step\n"
+            "      Then verify:\n"
+            '        """\n'
+            '        the payload embeds a snippet ending with """\n'
+            "        Given this docstring line must not be a step\n"
+            '        """\n',
+        )
+        write(self.root / "m1" / "dsl.md", dsl("a mapped step", "verify:"))
+        _roots, errors, _warnings, stats = self.audit(self.root)
+        self.assertEqual(errors, [])
+        self.assertEqual(stats["steps"], 2)
 
 
 if __name__ == "__main__":
